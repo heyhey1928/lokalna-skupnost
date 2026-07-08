@@ -142,6 +142,7 @@ async function main() {
   if (process.env.PUBLISHER_NSEC) sk = nip19.decode(process.env.PUBLISHER_NSEC).data;
   else { sk = generateSecretKey(); console.log('[ingest] PUBLISHER_NSEC ni nastavljen — začasen ključ (samo prikaz).'); }
   const pk = getPublicKey(sk);
+  console.log(`[ingest] publisher npub: ${nip19.npubEncode(pk)}`);
 
   let postavke = [];
   for (const vir of (cfg.viri || [])) {
@@ -187,6 +188,17 @@ async function main() {
   }
   console.log(`[ingest] sprejeto na vsaj enem relayju: ${ok}/${dogodki.length} (relayji: ${relays.join(', ')})`
     + (zavrnjeni ? `; ZAVRNJENIH: ${zavrnjeni} (primer razloga: ${primerZavrnitve})` : ''));
+
+  // Preverjanje berljivosti takoj po objavi (diagnostika)
+  await sleep(2500);
+  const oznakaKraja = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
+  for (const r of relays) {
+    try {
+      const poAvtorju = await pool.querySync([r], { kinds: [30023], authors: [pk], limit: 200 });
+      const poOznaki = await pool.querySync([r], { kinds: [30023], '#t': [oznakaKraja], limit: 200 });
+      console.log(`[ingest] BRANJE ${r} → po avtorju: ${poAvtorju.length}, po oznaki(${oznakaKraja}): ${poOznaki.length}`);
+    } catch (e) { console.log(`[ingest] BRANJE ${r} → NAPAKA: ${e.message}`); }
+  }
   pool.close(relays);
 }
 
