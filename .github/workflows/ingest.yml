@@ -1,0 +1,42 @@
+name: Ingest novic (Lokalna skupnost)
+
+# Zajem virov kraja -> podpisani NIP-23 dogodki -> objava na javne relayje.
+# Teče po urniku (brez lastnega strežnika). Objavlja samo, če je nastavljen secret PUBLISHER_NSEC.
+
+on:
+  schedule:
+    - cron: "0 * * * *"      # vsako polno uro (UTC)
+  workflow_dispatch:          # ročni zagon iz zavihka Actions
+
+concurrency:
+  group: ingest-ig
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Namesti odvisnosti
+        working-directory: ingest
+        run: npm ci || npm install
+
+      - name: (opcijsko) Headless brskalnik za JS-render vire (npr. Vrtec Ig)
+        working-directory: ingest
+        run: npm i -D playwright && npx playwright install --with-deps chromium
+        continue-on-error: true
+
+      - name: Zaženi ingest (objava na relayje)
+        working-directory: ingest
+        env:
+          KRAJ_SLUG: ig
+          PUBLISH: "1"
+          PUBLISHER_NSEC: ${{ secrets.PUBLISHER_NSEC }}   # OBVEZNO za objavo (Settings > Secrets)
+          FB_TOKEN_KLEPET: ${{ secrets.FB_TOKEN_KLEPET }} # opcijsko (ko je FB vklopljen)
+          FB_TOKEN_VARNOST: ${{ secrets.FB_TOKEN_VARNOST }}
+        run: node index.js

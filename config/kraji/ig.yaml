@@ -1,0 +1,92 @@
+# Konfiguracija kraja — Ig
+# Kanonična konfiguracija (bere jo ingest servis; iz nje se zgradi tudi web config).
+# Nov kraj = nova taka datoteka, brez sprememb kode (multi-kraj zasnova).
+
+kraj:
+  ime: "Ig"
+  slug: "ig"
+  koordinate: [45.958, 14.527]
+  jezik: "sl"
+
+branding:
+  logo_emoji: "🏡"
+  barva_primarna: "#7b3fe4"      # Nostr vijolična
+  barva_poudarek: "#c471ed"
+
+nostr:
+  # MVP: samo javni relayji, brez lastnega (primal odstranjen — sprejme, a ne streže poizvedb)
+  relay_pisanje: ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.mom"]
+  relay_branje:  ["wss://relay.damus.io", "wss://nos.lol", "wss://nostr.mom"]
+  oznaka: "ls-ig"                 # per-kraj tag za filtriranje
+  publisher_npub: "npub1_ig_TODO" # uradni glas kraja (ključ hranjen ločeno/bunker)
+  uredniki_npub: []              # allowlist urednikov (WoT / kuracija)
+
+# Politika: objavimo NASLOV + POVZETEK + POVEZAVO (z navedbo vira), ne celega besedila.
+viri:
+  - tip: rss
+    ime: "OŠ Ig"
+    url: "https://www.osig.si/feed/"
+    kategorija: "sola"
+
+  - tip: scrape
+    ime: "Občina Ig"
+    url: "https://www.obcina-ig.si/"
+    kategorija: "obcina"
+    maks: 20
+    # selektorji za uskladitev z živo stranjo (sicer hevristika):
+    selektor:
+      item: ""        # npr. ".novice li"  (kontejner ene novice)
+      naslov: ""      # npr. "h3 a"
+      povezava: ""    # npr. "a"
+      povzetek: ""    # npr. "p"
+
+  - tip: scrape
+    ime: "Vrtec Ig"
+    url: "https://vrtec-ig.si/"
+    kategorija: "sola"
+    js_render: true   # stran je JS-renderirana -> potreben headless zajem (Playwright); sicer se preskoči
+    selektor: { item: "", naslov: "", povezava: "", povzetek: "" }
+
+  - tip: scrape
+    ime: "Morostig — Hiša narave in kolišč"
+    url: "https://morostig.si/aktualno/"
+    kategorija: "dogodki"
+    maks: 20
+    selektor: { item: "", naslov: "", povezava: "", povzetek: "" }
+
+  # --- Facebook: PRIPRAVLJENO, a ONEMOGOČENO (glej ingest/adapters/facebook.js) ---
+  # Zaprti skupini; vklopi (enabled: true) šele po dogovoru z administratorji.
+  - tip: fb
+    ime: "Ižanski klepet (FB)"
+    enabled: false
+    nacin: "graph"          # graph | rocno
+    page_id: ""
+    token_env: "FB_TOKEN_KLEPET"
+    kategorija: "skupnost"
+  - tip: fb
+    ime: "Informirani in varni na Igu (FB)"
+    enabled: false
+    nacin: "graph"
+    page_id: ""
+    token_env: "FB_TOKEN_VARNOST"
+    kategorija: "varnost"
+
+kategorije_novic: ["obcina", "sola", "dogodki", "skupnost", "varnost"]
+
+trznica:
+  omogoceno: true
+  kategorije: ["pridelki-hrana", "domaci-izdelki", "obrt", "storitve",
+               "kmetija-zivali", "turizem", "rabljeno-podarim", "delo"]
+  cene: "opcijsko"
+  moderacija: "pomoderacija"      # pomoderacija | predmoderacija | samo-verificirani
+  slike_samo_nas_nalagalnik: true
+
+izobrazevanje:
+  omogoceno: true
+  kategorije: ["jeziki", "digitalno", "glasba-umetnost", "kmetijstvo-vrt",
+               "obrt", "kuhanje", "sport", "otroci", "instrukcije",
+               "osebna-rast", "financna-pismenost"]
+  formati: ["delavnica", "tecaj", "v-zivo", "spletno", "individualno", "gradivo"]
+  oznaka_placljivo: true
+
+nostr_info_url: "https://nakojnu.si/orodja/nostr/"

@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lokalna skupnost — Ig (mockup)</title>
+<style>
+  :root{
+    --primarna:#1c6b3c;
+    --primarna-temna:#14512d;
+    --primarna-svetla:#e8f3ec;
+    --tekst:#1b2420;
+    --tekst-mehko:#5c6b63;
+    --ozadje:#f5f7f5;
+    --karta:#ffffff;
+    --rob:#e2e8e4;
+    --zap:#f7931a;
+    --senca:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--ozadje);color:var(--tekst);line-height:1.5}
+  a{color:inherit;text-decoration:none}
+
+  .demo-trak{background:#fff3cd;color:#7a5b00;text-align:center;font-size:12px;padding:6px 12px;border-bottom:1px solid #f0e0a8}
+
+  header{background:var(--karta);border-bottom:1px solid var(--rob);position:sticky;top:0;z-index:20}
+  .header-in{max-width:1080px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:var(--primarna)}
+  .logo .znak{width:34px;height:34px;border-radius:9px;background:var(--primarna);color:#fff;display:grid;place-items:center;font-size:18px}
+  .logo small{display:block;font-size:11px;font-weight:500;color:var(--tekst-mehko);letter-spacing:.5px}
+  .isci{flex:1;max-width:300px;margin-left:8px}
+  .isci input{width:100%;padding:9px 14px;border:1px solid var(--rob);border-radius:24px;font-size:14px;background:var(--ozadje)}
+  .spacer{flex:1}
+  .kraj-izbor{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tekst-mehko);border:1px solid var(--rob);padding:7px 12px;border-radius:20px;cursor:pointer}
+  .btn-prijava{background:var(--primarna);color:#fff;border:none;padding:9px 16px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .btn-prijava:hover{background:var(--primarna-temna)}
+
+  .profil{display:none;align-items:center;gap:8px;border:1px solid var(--rob);padding:5px 12px 5px 5px;border-radius:24px;cursor:pointer}
+  .profil .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#7b3fe4,#c471ed);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+  .profil .npub{font-size:13px;font-family:monospace;color:var(--tekst-mehko)}
+
+  /* preklop pogleda */
+  .pogledi{max-width:1080px;margin:0 auto;padding:0 20px;display:flex;gap:4px}
+  .pogled-tab{padding:12px 18px;font-size:15px;font-weight:600;color:var(--tekst-mehko);border-bottom:3px solid transparent;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .pogled-tab.aktiven{color:var(--primarna);border-bottom-color:var(--primarna)}
+
+  .kategorije{max-width:1080px;margin:0 auto;padding:12px 20px 0;display:flex;gap:8px;flex-wrap:wrap}
+  .cip{padding:7px 14px;border:1px solid var(--rob);background:var(--karta);border-radius:20px;font-size:13px;cursor:pointer;color:var(--tekst-mehko);transition:.15s}
+  .cip:hover{border-color:var(--primarna)}
+  .cip.aktiven{background:var(--primarna);color:#fff;border-color:var(--primarna)}
+
+  .glavno{max-width:1080px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+  @media(max-width:860px){.glavno{grid-template-columns:1fr}.stranica{order:-1}}
+
+  /* novice */
+  .karta{background:var(--karta);border:1px solid var(--rob);border-radius:14px;box-shadow:var(--senca);margin-bottom:16px;overflow:hidden}
+  .karta-glava{display:flex;align-items:center;gap:10px;padding:14px 16px 0}
+  .vir{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;font-weight:700;color:#fff;font-size:13px;flex-shrink:0}
+  .vir.obcina{background:#2563eb}.vir.sola{background:#0891b2}.vir.skupnost{background:#7c3aed}.vir.varnost{background:#dc2626}.vir.dogodki{background:#ea580c}
+  .vir-meta{flex:1;min-width:0}
+  .vir-ime{font-size:14px;font-weight:600}
+  .vir-ime .znacka{color:var(--primarna);font-size:12px;margin-left:3px}
+  .vir-sub{font-size:12px;color:var(--tekst-mehko)}
+  .oznaka-kat{font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px;background:var(--primarna-svetla);color:var(--primarna-temna)}
+  .karta-telo{padding:10px 16px 4px}
+  .karta-telo h3{font-size:17px;margin-bottom:6px;line-height:1.35}
+  .karta-telo p{font-size:14px;color:var(--tekst-mehko);margin-bottom:10px}
+  .karta-telo .vir-link{font-size:13px;color:var(--primarna);font-weight:600}
+  .karta-noga{display:flex;align-items:center;gap:4px;padding:8px 10px;border-top:1px solid var(--rob);margin-top:8px}
+  .akcija{display:flex;align-items:center;gap:7px;padding:8px 12px;border:none;background:none;border-radius:8px;font-size:13px;color:var(--tekst-mehko);cursor:pointer;transition:.15s}
+  .akcija:hover{background:var(--ozadje)}
+  .akcija.zap:hover{color:var(--zap)}
+  .akcija.like:hover{color:#e0245e}
+  .akcija.aktivna.like{color:#e0245e}
+  .akcija.aktivna.zap{color:var(--zap)}
+  .akcija .n{font-variant-numeric:tabular-nums}
+
+  /* TRŽNICA */
+  .trznica-glava{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .trznica-glava h2{font-size:19px}
+  .btn-oglas{background:var(--primarna);color:#fff;border:none;padding:10px 16px;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer}
+  .btn-oglas:hover{background:var(--primarna-temna)}
+  .oglasi{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:560px){.oglasi{grid-template-columns:1fr}}
+  .oglas{background:var(--karta);border:1px solid var(--rob);border-radius:14px;box-shadow:var(--senca);overflow:hidden;display:flex;flex-direction:column}
+  .oglas-slika{height:130px;display:grid;place-items:center;font-size:44px;position:relative}
+  .oglas-kat{position:absolute;top:10px;left:10px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:12px;background:rgba(255,255,255,.92);color:var(--tekst)}
+  .oglas-telo{padding:12px 14px;flex:1;display:flex;flex-direction:column}
+  .oglas-telo h3{font-size:15px;margin-bottom:4px;line-height:1.3}
+  .cena{font-size:16px;font-weight:700;color:var(--primarna);margin-bottom:8px}
+  .cena.dogovor{color:var(--tekst-mehko);font-weight:600;font-size:14px}
+  .prodajalec{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:8px}
+  .prodajalec .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#16a34a,#65a30d);color:#fff;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}
+  .prodajalec .ime{font-size:12px;font-weight:600}
+  .prodajalec .znacka{color:var(--primarna);font-size:11px}
+  .prodajalec .loc{font-size:11px;color:var(--tekst-mehko)}
+  .oglas-noga{display:flex;gap:4px;padding:6px 8px;border-top:1px solid var(--rob)}
+  .btn-kontakt{flex:1;background:var(--primarna-svetla);color:var(--primarna-temna);border:none;border-radius:8px;padding:8px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn-kontakt:hover{background:#d8ebe0}
+  /* web of trust — socialni dokaz */
+  .wot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--primarna-temna);background:var(--primarna-svetla);border-radius:8px;padding:5px 9px;margin:2px 0 8px}
+  .wot .avti{display:flex}
+  .wot .avti span{width:18px;height:18px;border-radius:50%;border:2px solid #fff;margin-left:-6px;display:grid;place-items:center;font-size:9px;color:#fff;font-weight:700}
+  .wot .avti span:first-child{margin-left:0}
+  .vec{background:none;border:none;color:var(--tekst-mehko);cursor:pointer;border-radius:8px;padding:8px 10px;font-size:15px;line-height:1}
+  .vec:hover{background:var(--ozadje)}
+  .karta-meni{display:none;position:fixed;background:#fff;border:1px solid var(--rob);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.16);min-width:210px;z-index:55;padding:6px}
+  .karta-meni.odprt{display:block}
+  .km-el{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:8px;font-size:14px;cursor:pointer}
+  .km-el:hover{background:var(--ozadje)}
+  .km-el.prijava{color:#dc2626}
+  /* izobraževanje značke */
+  .izo-znacke{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+  .znacka-pill{font-size:11px;font-weight:600;padding:3px 8px;border-radius:10px}
+  .znacka-pill.format{background:#eef2ff;color:#3730a3}
+  .znacka-pill.brezplacno{background:#dcfce7;color:#166534}
+  .znacka-pill.placljivo{background:#fef3c7;color:#92400e}
+
+  .stranica{position:sticky;top:80px}
+  .panel{background:var(--karta);border:1px solid var(--rob);border-radius:14px;box-shadow:var(--senca);margin-bottom:16px;overflow:hidden}
+  .panel h4{font-size:14px;padding:14px 16px;border-bottom:1px solid var(--rob);display:flex;align-items:center;gap:8px}
+  .panel-telo{padding:6px 16px 14px}
+  .dogodek{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--rob)}
+  .dogodek:last-child{border-bottom:none}
+  .datum{text-align:center;flex-shrink:0;width:44px}
+  .datum .d{font-size:19px;font-weight:700;color:var(--primarna);line-height:1}
+  .datum .m{font-size:11px;text-transform:uppercase;color:var(--tekst-mehko)}
+  .dogodek-ime{font-size:13px;font-weight:600}
+  .dogodek-loc{font-size:12px;color:var(--tekst-mehko)}
+  .info-vrstica{font-size:13px;color:var(--tekst-mehko);padding:8px 0;display:flex;gap:8px;align-items:flex-start}
+  .info-vrstica .pika{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
+  /* subtilni Nostr panel */
+  .panel-nostr{background:linear-gradient(180deg,#faf7ff,#fff);border-color:#e7ddf7}
+  .panel-nostr h4{border-bottom-color:#efe7fb}
+  .nostr-link{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:13px;font-weight:600;color:#7b3fe4}
+  .nostr-link:hover{text-decoration:underline}
+  .kd-link{font-size:12px;color:var(--primarna);font-weight:600}
+  .kd-link:hover{text-decoration:underline}
+
+  .mask{display:none;position:fixed;inset:0;background:rgba(20,30,25,.55);z-index:50;align-items:center;justify-content:center;padding:20px}
+  .mask.odprt{display:flex}
+  .modal{background:#fff;border-radius:18px;max-width:420px;width:100%;padding:28px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .modal .ikona{width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,#7b3fe4,#c471ed);color:#fff;display:grid;place-items:center;font-size:28px;margin:0 auto 16px}
+  .modal h2{font-size:20px;margin-bottom:8px}
+  .modal p{font-size:14px;color:var(--tekst-mehko);margin-bottom:20px}
+  .modal .opcija{display:flex;align-items:center;gap:12px;text-align:left;border:1px solid var(--rob);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.15s}
+  .modal .opcija:hover{border-color:var(--primarna);background:var(--primarna-svetla)}
+  .modal .opcija .em{font-size:22px}
+  .modal .opcija b{font-size:14px;display:block}
+  .modal .opcija span{font-size:12px;color:var(--tekst-mehko)}
+  .modal .zapri{margin-top:6px;font-size:13px;color:var(--tekst-mehko);cursor:pointer;background:none;border:none}
+
+  /* obrazec za oddajo */
+  .modal-form{max-width:520px;text-align:left;max-height:88vh;overflow-y:auto}
+  .modal-form h2{margin-bottom:4px}
+  .form-pod{font-size:13px;color:var(--tekst-mehko);margin-bottom:16px}
+  .polje{margin-bottom:13px}
+  .polje label{display:block;font-size:13px;font-weight:600;margin-bottom:5px}
+  .polje input,.polje select,.polje textarea{width:100%;padding:9px 11px;border:1px solid var(--rob);border-radius:9px;font-size:14px;font-family:inherit;background:#fff}
+  .polje textarea{min-height:78px;resize:vertical}
+  .polje .namig{font-size:11px;color:var(--tekst-mehko);margin-top:4px}
+  .form-vrsta{display:flex;gap:10px}.form-vrsta .polje{flex:1}
+  .radio-vrsta{display:flex;gap:8px}
+  .radio-cip{flex:1;text-align:center;border:1px solid var(--rob);border-radius:9px;padding:9px;font-size:13px;font-weight:600;cursor:pointer;color:var(--tekst-mehko)}
+  .radio-cip.izbran{background:var(--primarna-svetla);border-color:var(--primarna);color:var(--primarna-temna)}
+  .nalozi{border:1.5px dashed var(--rob);border-radius:11px;padding:16px;text-align:center;font-size:13px;color:var(--tekst-mehko);cursor:pointer}
+  .nalozi:hover{border-color:var(--primarna);background:var(--primarna-svetla)}
+  .nalozi b{color:var(--primarna)}
+  .moderacija-opomba{font-size:11px;color:#7a5b00;background:#fff3cd;border-radius:8px;padding:8px 10px;margin-top:8px}
+  .form-akcije{display:flex;gap:10px;margin-top:18px}
+  .form-akcije button{flex:1;padding:11px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none}
+  .btn-ghost{background:#fff;border:1px solid var(--rob) !important;color:var(--tekst)}
+  .btn-primary{background:var(--primarna);color:#fff}
+  .btn-primary:hover{background:var(--primarna-temna)}
+
+  /* spustni meniji (kraj, profil) */
+  .ovoj{position:relative}
+  .meni{display:none;position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--rob);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.14);min-width:210px;z-index:40;overflow:hidden;padding:6px}
+  .meni.odprt{display:block}
+  .meni-naslov{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tekst-mehko);padding:8px 12px 4px}
+  .meni-el{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:14px;cursor:pointer}
+  .meni-el:hover{background:var(--ozadje)}
+  .meni-el.trenutni{color:var(--primarna);font-weight:600}
+  .meni-el.odjava{color:#dc2626}
+  .meni-loc{height:1px;background:var(--rob);margin:6px 4px}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--tekst);color:#fff;padding:12px 20px;border-radius:24px;font-size:14px;z-index:60;transition:.3s;opacity:0}
+  .toast.viden{transform:translateX(-50%) translateY(0);opacity:1}
+  .noga-info{max-width:1080px;margin:0 auto;padding:8px 20px 40px;font-size:12px;color:var(--tekst-mehko);text-align:center}
+  .skrit{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="demo-trak">⚠️ DEMO / mockup — vsi oglasi in novice so izmišljen primer za prikaz postavitve. Portal: <b>Lokalna skupnost · Ig</b></div>
+
+<header>
+  <div class="header-in">
+    <a class="logo" href="#">
+      <span class="znak">L</span>
+      <span>Lokalna skupnost<small>DOGAJANJE V KRAJU · IG</small></span>
+    </a>
+    <div class="isci"><input id="iskalnik" placeholder="Išči po novicah, dogodkih in oglasih…"></div>
+    <div class="spacer"></div>
+    <div class="ovoj">
+      <div class="kraj-izbor" id="krajIzbor" title="Multi-kraj: preklopi kraj (isti sistem, druga konfiguracija)">📍 <b id="krajIme">Ig</b> ▾</div>
+      <div class="meni" id="krajMeni">
+        <div class="meni-naslov">Izberi kraj</div>
+        <div class="meni-el trenutni" data-kraj="Ig">📍 Ig ✓</div>
+        <div class="meni-el" data-kraj="Brezovica">📍 Brezovica</div>
+        <div class="meni-el" data-kraj="Škofljica">📍 Škofljica</div>
+        <div class="meni-el" data-kraj="Velike Lašče">📍 Velike Lašče</div>
+        <div class="meni-loc"></div>
+        <div class="meni-el" style="color:var(--tekst-mehko)">➕ Predlagaj svoj kraj</div>
+      </div>
+    </div>
+    <button class="btn-prijava" id="btnPrijava"><span>🔑</span> Poveži Nostr</button>
+    <div class="ovoj">
+      <div class="profil" id="profilChip">
+        <span class="av">DŠ</span>
+        <span class="npub">npub1q8…4f2</span>
+      </div>
+      <div class="meni" id="profilMeni">
+        <div class="meni-naslov">Nostr profil</div>
+        <div class="meni-el" data-p="profil">👤 Moj profil</div>
+        <div class="meni-el" data-p="objave">📝 Moje objave in oglasi</div>
+        <div class="meni-el" data-p="ponudbe">🎓 Moje učne ponudbe</div>
+        <div class="meni-loc"></div>
+        <div class="meni-el" data-p="npub">🔑 Kopiraj npub</div>
+        <div class="meni-el" data-p="nastavitve">⚙️ Nastavitve (relayji, ključi)</div>
+        <div class="meni-loc"></div>
+        <div class="meni-el odjava" data-p="odjava">🚪 Odjava</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- preklop: Novice / Tržnica -->
+  <div class="pogledi">
+    <div class="pogled-tab aktiven" data-pogled="novice">📰 Novice</div>
+    <div class="pogled-tab" data-pogled="trznica">🛒 Tržnica</div>
+    <div class="pogled-tab" data-pogled="izobrazevanje">🎓 Izobraževanje</div>
+  </div>
+
+  <!-- kategorije novic -->
+  <div class="kategorije" id="katNovice">
+    <div class="cip aktiven" data-kat="vse">Vse</div>
+    <div class="cip" data-kat="obcina">🏛️ Občina</div>
+    <div class="cip" data-kat="sola">🎓 Šola</div>
+    <div class="cip" data-kat="dogodki">📅 Dogodki</div>
+    <div class="cip" data-kat="skupnost">💬 Skupnost</div>
+    <div class="cip" data-kat="varnost">🚨 Varnost</div>
+  </div>
+
+  <!-- kategorije tržnice -->
+  <div class="kategorije skrit" id="katTrznica">
+    <div class="cip aktiven" data-kat="vse">Vse</div>
+    <div class="cip" data-kat="pridelki">🥕 Pridelki in hrana</div>
+    <div class="cip" data-kat="domaci">🍯 Domači izdelki</div>
+    <div class="cip" data-kat="obrt">🪵 Obrt in rokodelstvo</div>
+    <div class="cip" data-kat="storitve">🔧 Storitve</div>
+    <div class="cip" data-kat="kmetija">🐔 Kmetija in živali</div>
+    <div class="cip" data-kat="turizem">🏡 Kmečki turizem</div>
+    <div class="cip" data-kat="rabljeno">♻️ Rabljeno / podarim</div>
+    <div class="cip" data-kat="delo">💼 Delo</div>
+  </div>
+
+  <!-- kategorije izobraževanja -->
+  <div class="kategorije skrit" id="katIzobrazevanje">
+    <div class="cip aktiven" data-kat="vse">Vse</div>
+    <div class="cip" data-kat="placilo-brezplacno">🆓 Brezplačno</div>
+    <div class="cip" data-kat="placilo-placljivo">💶 Plačljivo</div>
+    <div class="cip" data-kat="jeziki">🗣️ Jeziki</div>
+    <div class="cip" data-kat="digitalno">💻 Digitalno</div>
+    <div class="cip" data-kat="glasba">🎨 Glasba in umetnost</div>
+    <div class="cip" data-kat="kmetijstvo">🌱 Kmetijstvo in vrt</div>
+    <div class="cip" data-kat="instrukcije">📚 Inštrukcije</div>
+    <div class="cip" data-kat="financna">💰 Finančna pismenost</div>
+    <div class="cip" data-kat="otroci">🧒 Za otroke</div>
+  </div>
+</header>
+
+<div class="glavno">
+
+  <!-- ============ POGLED: NOVICE ============ -->
+  <div class="feed" id="feedNovice">
+    <article class="karta" data-kat="obcina">
+      <div class="karta-glava">
+        <div class="vir obcina">OI</div>
+        <div class="vir-meta"><div class="vir-ime">Občina Ig <span class="znacka" title="Verificiran profil (NIP-05)">✓</span></div><div class="vir-sub">obcina-ig.si · pred 2 urama</div></div>
+        <span class="oznaka-kat">Občina</span>
+      </div>
+      <div class="karta-telo"><h3>[PRIMER] Obvestilo o zapori ceste zaradi obnove</h3><p>Kratek povzetek novice, samodejno zajet iz vira. Celotno besedilo je na izvirni strani.</p><a class="vir-link" href="#">Preberi na obcina-ig.si →</a></div>
+      <div class="karta-noga">
+        <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">12</span></button>
+        <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+        <button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">210</span></button>
+      </div>
+    </article>
+
+    <article class="karta" data-kat="sola">
+      <div class="karta-glava">
+        <div class="vir sola">OŠ</div>
+        <div class="vir-meta"><div class="vir-ime">OŠ Ig <span class="znacka" title="Verificiran profil (NIP-05)">✓</span></div><div class="vir-sub">osig.si · RSS · pred 5 urami</div></div>
+        <span class="oznaka-kat">Šola</span>
+      </div>
+      <div class="karta-telo"><h3>[PRIMER] Zaključna prireditev in roditeljski sestanki</h3><p>Povzetek objave iz šolskega RSS vira (samodejni zajem).</p><a class="vir-link" href="#">Preberi na osig.si →</a></div>
+      <div class="karta-noga">
+        <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">28</span></button>
+        <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">7</span></button>
+        <button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">0</span></button>
+      </div>
+    </article>
+
+    <article class="karta" data-kat="sola">
+      <div class="karta-glava">
+        <div class="vir sola">VI</div>
+        <div class="vir-meta"><div class="vir-ime">Vrtec Ig <span class="znacka" title="Verificiran profil (NIP-05)">✓</span></div><div class="vir-sub">vrtec-ig.si · zajem · pred 8 urami</div></div>
+        <span class="oznaka-kat">Šola</span>
+      </div>
+      <div class="karta-telo"><h3>[PRIMER] Vpis novincev za jesen — obvestilo staršem</h3><p>Povzetek obvestila vrtca (zajem strani). Celotno besedilo na izvirni strani.</p><a class="vir-link" href="#">Preberi na vrtec-ig.si →</a></div>
+      <div class="karta-noga">
+        <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">16</span></button>
+        <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">2</span></button>
+        <button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">0</span></button>
+      </div>
+    </article>
+
+    <article class="karta" data-kat="dogodki">
+      <div class="karta-glava">
+        <div class="vir dogodki">MO</div>
+        <div class="vir-meta"><div class="vir-ime">Morostig <span class="znacka" title="Verificiran profil (NIP-05)">✓</span></div><div class="vir-sub">morostig.si · zajem · pred 1 dnevom</div></div>
+        <span class="oznaka-kat">Dogodki</span>
+      </div>
+      <div class="karta-telo"><h3>[PRIMER] Vodeni ogledi kolišča ob koncu tedna</h3><p>Novice in dogodki Hiše narave in kolišč (zajem rubrike »Aktualno«).</p><a class="vir-link" href="#">Preberi na morostig.si →</a></div>
+      <div class="karta-noga">
+        <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">21</span></button>
+        <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+        <button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">140</span></button>
+      </div>
+    </article>
+
+    <article class="karta" data-kat="skupnost">
+      <div class="karta-glava">
+        <div class="vir skupnost">IK</div>
+        <div class="vir-meta"><div class="vir-ime">Ižanski klepet</div><div class="vir-sub">FB skupina · ročno kurirano · včeraj</div></div>
+        <span class="oznaka-kat">Skupnost</span>
+      </div>
+      <div class="karta-telo"><h3>[PRIMER] Izgubljen maček v okolici Ižanske ceste</h3><p>Vsebina iz FB skupine je uredniško povzeta ob soglasju adminov (brez samodejnega zajema).</p><a class="vir-link" href="#">Vir: FB skupina Ižanski klepet</a></div>
+      <div class="karta-noga">
+        <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">44</span></button>
+        <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">15</span></button>
+        <button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">1.2k</span></button>
+      </div>
+    </article>
+
+    <article class="karta" data-kat="varnost">
+      <div class="karta-glava">
+        <div class="vir varnost">IV</div>
+        <div class="vir-meta"><div class="vir-ime">Informirani in varni na Igu</div><div class="vir-sub">FB skupina · ročno kurirano · pred 2 dnevoma</div></div>
+        <span class="oznaka-kat">Varnost</span>
+      </div>
+      <div class="karta-telo"><h3>[PRIMER] Opozorilo o vlomih — bodite pozorni</h3><p>Varnostna obvestila zbrana v enem kanalu, uredniško potrjena.</p><a class="vir-link" href="#">Vir: FB skupina Informirani in varni</a></div>
+      <div class="karta-noga">
+        <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">67</span></button>
+        <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">9</span></button>
+        <button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">0</span></button>
+      </div>
+    </article>
+  </div>
+
+  <!-- ============ POGLED: TRŽNICA ============ -->
+  <div class="feed skrit" id="feedTrznica">
+    <div class="trznica-glava">
+      <h2>🛒 Lokalna ponudba</h2>
+      <button class="btn-oglas" id="btnOglas">+ Dodaj oglas</button>
+    </div>
+
+    <div class="oglasi" id="oglasi">
+
+      <article class="oglas" data-kat="pridelki">
+        <div class="oglas-slika" style="background:#fef3c7"><span class="oglas-kat">🥕 Pridelki</span>🍯</div>
+        <div class="oglas-telo">
+          <h3>[PRIMER] Domači cvetlični med, 900 g</h3>
+          <div class="cena">7,50 €</div>
+          <div class="prodajalec"><span class="av">KN</span><div><div class="ime">Čebelarstvo Novak <span class="znacka" title="Verificiran (NIP-05)">✓</span></div><div class="loc">📍 Iška vas</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">9</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="pridelki">
+        <div class="oglas-slika" style="background:#dcfce7"><span class="oglas-kat">🥕 Pridelki</span>🥬</div>
+        <div class="oglas-telo">
+          <h3>[PRIMER] Sezonska zelenjava iz domačega vrta</h3>
+          <div class="cena dogovor">Cena po dogovoru</div>
+          <div class="prodajalec"><span class="av">MP</span><div><div class="ime">Kmetija pri Marku</div><div class="loc">📍 Ig</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">4</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="obrt">
+        <div class="oglas-slika" style="background:#ede9fe"><span class="oglas-kat">🪵 Obrt</span>🪑</div>
+        <div class="oglas-telo">
+          <h3>[PRIMER] Ročno izdelani leseni stoli</h3>
+          <div class="cena">od 85 €</div>
+          <div class="prodajalec"><span class="av">JK</span><div><div class="ime">Mizarstvo Kovač <span class="znacka" title="Verificiran (NIP-05)">✓</span></div><div class="loc">📍 Golo</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">17</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="storitve">
+        <div class="oglas-slika" style="background:#dbeafe"><span class="oglas-kat">🔧 Storitve</span>🚜</div>
+        <div class="oglas-telo">
+          <h3>[PRIMER] Košnja in urejanje zelenic</h3>
+          <div class="cena">15 €/h</div>
+          <div class="prodajalec"><span class="av">TZ</span><div><div class="ime">Tomaž — vrtna dela</div><div class="loc">📍 Ig in okolica</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">6</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="domaci">
+        <div class="oglas-slika" style="background:#fee2e2"><span class="oglas-kat">🍯 Domači izdelki</span>🍓</div>
+        <div class="oglas-telo">
+          <h3>[PRIMER] Domača marmelada in sokovi</h3>
+          <div class="cena">4 €</div>
+          <div class="prodajalec"><span class="av">AH</span><div><div class="ime">Ana — domača kuhinja</div><div class="loc">📍 Iška</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">11</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="rabljeno">
+        <div class="oglas-slika" style="background:#f1f5f9"><span class="oglas-kat">♻️ Rabljeno</span>🚲</div>
+        <div class="oglas-telo">
+          <h3>[PRIMER] Otroško kolo, dobro ohranjeno</h3>
+          <div class="cena dogovor">Podarim</div>
+          <div class="prodajalec"><span class="av">SP</span><div><div class="ime">Simona P.</div><div class="loc">📍 Ig</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">3</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">22</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <!-- ============ POGLED: IZOBRAŽEVANJE ============ -->
+  <div class="feed skrit" id="feedIzobrazevanje">
+    <div class="trznica-glava">
+      <h2>🎓 Izobraževanje</h2>
+      <button class="btn-oglas" id="btnUcnaPonudba">+ Dodaj ponudbo</button>
+    </div>
+
+    <div class="oglasi" id="ucnePonudbe">
+
+      <article class="oglas" data-kat="jeziki" data-placilo="placljivo">
+        <div class="oglas-slika" style="background:#e0e7ff"><span class="oglas-kat">🗣️ Jeziki</span>🇬🇧</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Tečaj · v živo</span><span class="znacka-pill placljivo">Plačljivo</span></div>
+          <h3>[PRIMER] Tečaj angleščine za odrasle</h3>
+          <div class="cena">60 € / mesec</div>
+          <div class="prodajalec"><span class="av">MK</span><div><div class="ime">Marija — jezikovna šola <span class="znacka" title="Verificiran (NIP-05)">✓</span></div><div class="loc">📍 Ig · 1×/teden</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Prijava / kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">4</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">8</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="kmetijstvo" data-placilo="brezplacno">
+        <div class="oglas-slika" style="background:#dcfce7"><span class="oglas-kat">🌱 Kmetijstvo</span>🐝</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Delavnica · v živo</span><span class="znacka-pill brezplacno">Brezplačno</span></div>
+          <h3>[PRIMER] Uvod v čebelarstvo — delavnica</h3>
+          <div class="cena dogovor">Brezplačno</div>
+          <div class="prodajalec"><span class="av">ČD</span><div><div class="ime">Čebelarsko društvo Ig <span class="znacka" title="Verificiran (NIP-05)">✓</span></div><div class="loc">📍 Iška vas</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Prijava / kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">4</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">31</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="instrukcije" data-placilo="placljivo">
+        <div class="oglas-slika" style="background:#fef9c3"><span class="oglas-kat">📚 Inštrukcije</span>➗</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Individualno</span><span class="znacka-pill placljivo">Plačljivo</span></div>
+          <h3>[PRIMER] Inštrukcije matematike (OŠ in SŠ)</h3>
+          <div class="cena">12 € / ura</div>
+          <div class="prodajalec"><span class="av">LP</span><div><div class="ime">Luka — inštruktor</div><div class="loc">📍 Ig ali na daljavo</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Prijava / kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">4</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">14</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="digitalno" data-placilo="brezplacno">
+        <div class="oglas-slika" style="background:#cffafe"><span class="oglas-kat">💻 Digitalno</span>🔐</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Gradivo · spletno</span><span class="znacka-pill brezplacno">Brezplačno</span></div>
+          <h3>[PRIMER] Osnove spletne varnosti — vodič</h3>
+          <div class="cena dogovor">Brezplačno · beri na portalu</div>
+          <div class="prodajalec"><span class="av">IV</span><div><div class="ime">Informirani in varni na Igu</div><div class="loc">📍 spletno gradivo (NIP-23)</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">📖 Odpri gradivo</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">5</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">27</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="glasba" data-placilo="placljivo">
+        <div class="oglas-slika" style="background:#fae8ff"><span class="oglas-kat">🎨 Glasba</span>🎸</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Tečaj · individualno</span><span class="znacka-pill placljivo">Plačljivo</span></div>
+          <h3>[PRIMER] Učenje kitare za začetnike</h3>
+          <div class="cena">15 € / ura</div>
+          <div class="prodajalec"><span class="av">NB</span><div><div class="ime">Nejc — glasbenik</div><div class="loc">📍 Golo</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Prijava / kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">4</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">10</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="financna" data-placilo="brezplacno">
+        <div class="oglas-slika" style="background:#d1fae5"><span class="oglas-kat">💰 Finančna pismenost</span>📊</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Delavnica · v živo</span><span class="znacka-pill brezplacno">Brezplačno</span></div>
+          <h3>[PRIMER] Osnove osebnih financ in proračuna</h3>
+          <div class="cena dogovor">Brezplačno</div>
+          <div class="prodajalec"><span class="av">DK</span><div><div class="ime">Društvo za finančno opismenjevanje</div><div class="loc">📍 Ig · večerna delavnica</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Prijava / kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">4</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">13</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+      <article class="oglas" data-kat="otroci" data-placilo="brezplacno">
+        <div class="oglas-slika" style="background:#ffedd5"><span class="oglas-kat">🧒 Za otroke</span>🎨</div>
+        <div class="oglas-telo">
+          <div class="izo-znacke"><span class="znacka-pill format">Delavnica · v živo</span><span class="znacka-pill brezplacno">Brezplačno</span></div>
+          <h3>[PRIMER] Ustvarjalne delavnice za otroke</h3>
+          <div class="cena dogovor">Brezplačno</div>
+          <div class="prodajalec"><span class="av">KL</span><div><div class="ime">Knjižnica Ig <span class="znacka" title="Verificiran (NIP-05)">✓</span></div><div class="loc">📍 Ig · sobote</div></div></div>
+        </div>
+        <div class="oglas-noga">
+          <button class="btn-kontakt" data-akcija="kontakt">✉️ Prijava / kontakt</button>
+          <button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">4</span></button>
+          <button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">19</span></button>
+          <button class="akcija zap" data-akcija="zap"><span>⚡</span></button>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <!-- ============ STRANICA ============ -->
+  <aside class="stranica">
+    <!-- panel za NOVICE -->
+    <div id="stranNovice">
+      <div class="panel">
+        <h4>📅 Prihajajoči dogodki</h4>
+        <div class="panel-telo">
+          <div class="dogodek"><div class="datum"><div class="d">04</div><div class="m">Jul</div></div><div><div class="dogodek-ime">[PRIMER] Krajevni sejem</div><div class="dogodek-loc">Center Iga · 9:00</div></div></div>
+          <div class="dogodek"><div class="datum"><div class="d">12</div><div class="m">Jul</div></div><div><div class="dogodek-ime">[PRIMER] Čistilna akcija</div><div class="dogodek-loc">Iška vas · 8:00</div></div></div>
+          <div class="dogodek"><div class="datum"><div class="d">20</div><div class="m">Jul</div></div><div><div class="dogodek-ime">[PRIMER] Koncert na prostem</div><div class="dogodek-loc">Grad Ig · 20:00</div></div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>📰 Viri kraja Ig</h4>
+        <div class="panel-telo">
+          <div class="info-vrstica"><span class="pika" style="background:#0891b2"></span><span>OŠ Ig — samodejni RSS</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#2563eb"></span><span>Občina Ig — zajem / uradni feed</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#0891b2"></span><span>Vrtec Ig — zajem strani</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#ea580c"></span><span>Morostig (Hiša narave in kolišč) — zajem</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#7c3aed"></span><span>Ižanski klepet (FB) — ročno</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#dc2626"></span><span>Informirani in varni (FB) — ročno</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>ℹ️ Kako deluje</h4>
+        <div class="panel-telo">
+          <div class="info-vrstica"><span class="pika" style="background:var(--primarna)"></span><span><b>Branje je odprto za vse</b> — brez prijave.</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#7b3fe4"></span><span><b>Interakcija</b> (👍 💬 ⚡) zahteva <b>Nostr profil</b>.</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#2563eb"></span><span>Vsebina teče prek <b>javnih Nostr relayjev</b>. <a class="kd-link" href="https://nakojnu.si/orodja/nostr/" target="_blank" rel="noopener">Kaj je Nostr? →</a></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- panel za TRŽNICO -->
+    <div id="stranTrznica" class="skrit">
+      <div class="panel">
+        <h4>🛒 O tržnici</h4>
+        <div class="panel-telo">
+          <div class="info-vrstica"><span class="pika" style="background:var(--primarna)"></span><span>Ponudbo objavijo <b>domači kmetje in obrtniki</b> sami (NIP-99).</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#7b3fe4"></span><span>Za <b>oddajo oglasa</b> ali stik potrebuješ <b>Nostr profil</b>.</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:var(--zap)"></span><span>Portal je <b>oglasna deska</b>, ne trgovina — plačilo je dogovor.</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#dc2626"></span><span>Oglasi in slike so <b>moderirani</b>; sporne prijaviš.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>✓ Verificirani ponudniki</h4>
+        <div class="panel-telo">
+          <div class="info-vrstica"><span class="pika" style="background:var(--primarna)"></span><span>Značka ✓ = potrjena istovetnost (NIP-05), npr. <i>kmetija-novak@ig.lokalna-skupnost.si</i>.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- panel za IZOBRAŽEVANJE -->
+    <div id="stranIzobrazevanje" class="skrit">
+      <div class="panel">
+        <h4>🎓 O izobraževanju</h4>
+        <div class="panel-telo">
+          <div class="info-vrstica"><span class="pika" style="background:var(--primarna)"></span><span>Učne ponudbe objavijo <b>izvajalci</b> sami (tečaji, delavnice, inštrukcije, gradiva).</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#166534"></span><span>Vsebine so <b>brezplačne ali plačljive</b> — filtriraj po znački.</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:var(--zap)"></span><span>Portal je <b>imenik ponudb</b> — prijava in plačilo potekata pri izvajalcu.</span></div>
+          <div class="info-vrstica"><span class="pika" style="background:#7b3fe4"></span><span>Za <b>oddajo ponudbe</b> ali prijavo potrebuješ <b>Nostr profil</b>.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- persistenten subtilni panel: Zakaj Nostr? (viden v vseh pogledih) -->
+    <div class="panel panel-nostr">
+      <h4>🔐 Zakaj Nostr?</h4>
+      <div class="panel-telo">
+        <div class="info-vrstica"><span class="pika" style="background:#7b3fe4"></span><span>Tvoj <b>profil je res tvoj</b> — prenosljiv med aplikacijami, ne ujet v to platformo.</span></div>
+        <div class="info-vrstica"><span class="pika" style="background:#7b3fe4"></span><span><b>Brez osrednjega lastnika</b> — ni oglasov in sledenja; podatki so odprti.</span></div>
+        <div class="info-vrstica"><span class="pika" style="background:#7b3fe4"></span><span>Tvoje <b>objave in stiki ostanejo tvoji</b>, tudi če zamenjaš aplikacijo.</span></div>
+        <a class="nostr-link" href="https://nakojnu.si/orodja/nostr/" target="_blank" rel="noopener">Več o Nostr protokolu →</a>
+      </div>
+    </div>
+
+  </aside>
+
+</div>
+
+<div class="noga-info">Lokalna skupnost · mockup demo za kraj Ig — postavljeno na Nostr protokolu · vsebina označena z [PRIMER] je demonstracijska.</div>
+
+<!-- MODAL prijava -->
+<div class="mask" id="mask">
+  <div class="modal">
+    <div class="ikona">🔑</div>
+    <h2 id="modalNaslov">Poveži se z Nostr profilom</h2>
+    <p id="modalOpis">Za všeček, komentar, zap, oddajo oglasa ali stik potrebuješ Nostr profil. Branje ostane odprto za vse.</p>
+    <div class="opcija" data-nacin="ext"><span class="em">🧩</span><div><b>Brskalniška razširitev</b><span>Alby, nos2x (NIP-07)</span></div></div>
+    <div class="opcija" data-nacin="bunker"><span class="em">📱</span><div><b>Poveži z aplikacijo / bunker</b><span>Nsec bunker (NIP-46) — priporočeno</span></div></div>
+    <div class="opcija" data-nacin="nov"><span class="em">✨</span><div><b>Nimam še profila — ustvari</b><span>Ustvari nov Nostr ključ v nekaj sekundah</span></div></div>
+    <button class="zapri" id="zapriModal">Zapri</button>
+  </div>
+</div>
+
+<!-- MODAL obrazec za oddajo (oglas / učna ponudba) -->
+<div class="mask" id="maskForm">
+  <div class="modal modal-form">
+    <h2 id="formNaslov">Nov oglas</h2>
+    <p class="form-pod" id="formPod">Objavi se kot tvoj podpisan NIP-99 dogodek in ostane tvoja last.</p>
+
+    <div class="polje">
+      <label>Naslov *</label>
+      <input id="fNaslov" placeholder="npr. Domači cvetlični med, 900 g">
+    </div>
+
+    <div class="polje">
+      <label>Kategorija *</label>
+      <select id="fKategorija"></select>
+    </div>
+
+    <div class="polje skrit" id="fFormatWrap">
+      <label>Oblika izvedbe</label>
+      <select id="fFormat">
+        <option>Delavnica</option><option>Tečaj</option><option>V živo</option>
+        <option>Spletno</option><option>Individualno (inštrukcije)</option><option>Gradivo (članek/video)</option>
+      </select>
+    </div>
+
+    <div class="polje">
+      <label>Opis</label>
+      <textarea id="fOpis" placeholder="Kratek opis ponudbe…"></textarea>
+    </div>
+
+    <div class="polje skrit" id="fPlaciloWrap">
+      <label>Cenovni status</label>
+      <div class="radio-vrsta" id="fPlacilo">
+        <div class="radio-cip izbran" data-v="brezplacno">🆓 Brezplačno</div>
+        <div class="radio-cip" data-v="placljivo">💶 Plačljivo</div>
+      </div>
+    </div>
+
+    <div class="form-vrsta" id="fCenaWrap">
+      <div class="polje"><label>Cena (neobvezno)</label><input id="fCena" placeholder="npr. 12"></div>
+      <div class="polje"><label>Valuta</label><select id="fValuta"><option>EUR</option><option>sats</option></select></div>
+    </div>
+    <div class="polje" style="margin-top:-4px"><div class="namig">Če cene ne vneseš, se prikaže »po dogovoru«.</div></div>
+
+    <div class="form-vrsta">
+      <div class="polje"><label>Lokacija</label><input id="fLokacija" placeholder="npr. Iška vas"></div>
+      <div class="polje"><label>Kontakt / povezava</label><input id="fKontakt" placeholder="telefon, e-pošta ali povezava"></div>
+    </div>
+
+    <div class="polje">
+      <label>Fotografije</label>
+      <div class="nalozi" id="fSlike">📷 Klikni za <b>nalaganje slik</b> (demo)</div>
+      <div class="moderacija-opomba">Slike se naložijo prek našega nalagalnika in gredo skozi samodejno moderacijo pred objavo.</div>
+    </div>
+
+    <div class="form-akcije">
+      <button class="btn-ghost" id="formPreklici">Prekliči</button>
+      <button class="btn-primary" id="formObjavi">Objavi</button>
+    </div>
+  </div>
+</div>
+
+<!-- deljeni popover meni za kartice (Priporočam / Prijavi) -->
+<div class="karta-meni" id="kartaMeni">
+  <div class="km-el" data-a="priporocam">🤝 Priporočam / Uporabljam</div>
+  <div class="km-el prijava" data-a="prijava">⚑ Prijavi (NIP-56)</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  var prijavljen = false;
+  var mask = document.getElementById('mask');
+  var toast = document.getElementById('toast');
+
+  function pokaziToast(t){toast.textContent=t;toast.classList.add('viden');clearTimeout(toast._t);toast._t=setTimeout(function(){toast.classList.remove('viden')},2600);}
+  function odpriModal(){mask.classList.add('odprt')}
+  function zapriModal(){mask.classList.remove('odprt')}
+
+  document.getElementById('btnPrijava').addEventListener('click', odpriModal);
+  document.getElementById('zapriModal').addEventListener('click', zapriModal);
+  mask.addEventListener('click', function(e){if(e.target===mask) zapriModal()});
+
+  document.querySelectorAll('.modal .opcija').forEach(function(o){
+    o.addEventListener('click', function(){
+      prijavljen = true; zapriModal();
+      document.getElementById('btnPrijava').style.display='none';
+      document.getElementById('profilChip').style.display='flex';
+      pokaziToast('Povezan z Nostr profilom ✓ (demo)');
+    });
+  });
+
+  // pogledi: novice / trznica / izobrazevanje
+  var POGLEDI = {
+    novice:        { feed:'feedNovice',        kat:'katNovice',        stran:'stranNovice',        tarce:'#feedNovice .karta' },
+    trznica:       { feed:'feedTrznica',       kat:'katTrznica',       stran:'stranTrznica',       tarce:'#oglasi .oglas' },
+    izobrazevanje: { feed:'feedIzobrazevanje', kat:'katIzobrazevanje', stran:'stranIzobrazevanje', tarce:'#ucnePonudbe .oglas' }
+  };
+  var aktivniPogled = 'novice';
+
+  document.querySelectorAll('.pogled-tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.pogled-tab').forEach(function(x){x.classList.remove('aktiven')});
+      t.classList.add('aktiven');
+      aktivniPogled = t.dataset.pogled;
+      Object.keys(POGLEDI).forEach(function(p){
+        var akt = (p===aktivniPogled), c = POGLEDI[p];
+        document.getElementById(c.feed).classList.toggle('skrit', !akt);
+        document.getElementById(c.kat).classList.toggle('skrit', !akt);
+        document.getElementById(c.stran).classList.toggle('skrit', !akt);
+      });
+      document.getElementById('iskalnik').value='';
+    });
+  });
+
+  // filtriranje kategorij (deluje za vse sezname; podpira tudi filter po plačilu)
+  function nastaviFilter(vsebnik, tarce){
+    vsebnik.addEventListener('click', function(e){
+      var c = e.target.closest('.cip'); if(!c) return;
+      vsebnik.querySelectorAll('.cip').forEach(function(x){x.classList.remove('aktiven')});
+      c.classList.add('aktiven');
+      var kat = c.dataset.kat;
+      document.querySelectorAll(tarce).forEach(function(k){
+        var zadetek;
+        if(kat==='vse') zadetek = true;
+        else if(kat.indexOf('placilo-')===0) zadetek = (k.dataset.placilo === kat.replace('placilo-',''));
+        else zadetek = (k.dataset.kat === kat);
+        k.style.display = zadetek ? '' : 'none';
+      });
+    });
+  }
+  nastaviFilter(document.getElementById('katNovice'), '#feedNovice .karta');
+  nastaviFilter(document.getElementById('katTrznica'), '#oglasi .oglas');
+  nastaviFilter(document.getElementById('katIzobrazevanje'), '#ucnePonudbe .oglas');
+
+  // iskalnik (client-side, kot v planu 4.2) — išče v aktivnem pogledu
+  document.getElementById('iskalnik').addEventListener('input', function(e){
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll(POGLEDI[aktivniPogled].tarce).forEach(function(el){
+      var t = el.textContent.toLowerCase();
+      el.style.display = (q==='' || t.indexOf(q)>-1) ? '' : 'none';
+    });
+  });
+
+  // ===== spustna menija (kraj, profil) =====
+  var krajMeni = document.getElementById('krajMeni');
+  var profilMeni = document.getElementById('profilMeni');
+  function zapriMenije(){ krajMeni.classList.remove('odprt'); profilMeni.classList.remove('odprt'); }
+
+  document.getElementById('krajIzbor').addEventListener('click', function(e){
+    e.stopPropagation(); profilMeni.classList.remove('odprt'); krajMeni.classList.toggle('odprt');
+  });
+  krajMeni.addEventListener('click', function(e){
+    var el = e.target.closest('.meni-el'); if(!el) return;
+    if(el.dataset.kraj){
+      document.getElementById('krajIme').textContent = el.dataset.kraj;
+      pokaziToast('Preklop na kraj: ' + el.dataset.kraj + ' (naloži se konfiguracija kraja — demo)');
+    } else { pokaziToast('Predlog novega kraja (demo)'); }
+    zapriMenije();
+  });
+
+  // profil chip odpre meni le, če si prijavljen
+  document.getElementById('profilChip').addEventListener('click', function(e){
+    e.stopPropagation(); krajMeni.classList.remove('odprt'); profilMeni.classList.toggle('odprt');
+  });
+  profilMeni.addEventListener('click', function(e){
+    var el = e.target.closest('.meni-el'); if(!el) return;
+    var p = el.dataset.p;
+    if(p==='odjava'){
+      prijavljen=false;
+      document.getElementById('profilChip').style.display='none';
+      document.getElementById('btnPrijava').style.display='flex';
+      pokaziToast('Odjavljen (demo)');
+    } else if(p==='npub'){ pokaziToast('npub kopiran v odložišče (demo)'); }
+    else if(p==='profil'){ pokaziToast('Odpre se tvoj Nostr profil (demo)'); }
+    else if(p==='objave'){ pokaziToast('Seznam tvojih objav in oglasov (demo)'); }
+    else if(p==='ponudbe'){ pokaziToast('Seznam tvojih učnih ponudb (demo)'); }
+    else if(p==='nastavitve'){ pokaziToast('Nastavitve: relayji in ključi (demo)'); }
+    zapriMenije();
+  });
+  document.addEventListener('click', zapriMenije);
+
+  // ===== obrazec za oddajo (oglas / učna ponudba) =====
+  var maskForm = document.getElementById('maskForm');
+  var KATEGORIJE = {
+    trznica: ['Kmetijski pridelki in hrana','Domači predelani izdelki','Obrt in rokodelstvo',
+              'Storitve','Kmetija in živali','Kmečki turizem','Rabljeno / podarim','Delo'],
+    izobrazevanje: ['Jeziki','Računalništvo in digitalno','Glasba in umetnost','Kmetijstvo in vrt',
+              'Obrt in rokodelstvo','Kuhanje in gospodinjstvo','Šport in rekreacija',
+              'Za otroke in mladino','Inštrukcije in učna pomoč','Osebna rast in poklic',
+              'Finančna pismenost']
+  };
+  var placiloIzbran = 'brezplacno';
+
+  function napolniKategorije(tip){
+    var sel = document.getElementById('fKategorija'); sel.innerHTML='';
+    KATEGORIJE[tip].forEach(function(k){ var o=document.createElement('option'); o.textContent=k; sel.appendChild(o); });
+  }
+  function odpriForm(tip){
+    var izo = (tip==='izobrazevanje');
+    document.getElementById('formNaslov').textContent = izo ? 'Nova učna ponudba' : 'Nov oglas';
+    document.getElementById('formPod').textContent = izo
+      ? 'Objavi se kot tvoj podpisan NIP-99 dogodek (brezplačno ali plačljivo) in ostane tvoja last.'
+      : 'Objavi se kot tvoj podpisan NIP-99 dogodek in ostane tvoja last.';
+    napolniKategorije(tip);
+    document.getElementById('fFormatWrap').classList.toggle('skrit', !izo);
+    document.getElementById('fPlaciloWrap').classList.toggle('skrit', !izo);
+    maskForm.classList.add('odprt');
+  }
+  function zapriForm(){ maskForm.classList.remove('odprt'); }
+
+  function kliknjenoDodaj(tip, naslovModala, opisModala){
+    if(!prijavljen){
+      document.getElementById('modalNaslov').textContent=naslovModala;
+      document.getElementById('modalOpis').textContent=opisModala;
+      odpriModal();
+    } else { odpriForm(tip); }
+  }
+  document.getElementById('btnOglas').addEventListener('click', function(){
+    kliknjenoDodaj('trznica','Za oddajo oglasa poveži Nostr',
+      'Oglas se objavi kot tvoj NIP-99 dogodek in ostane tvoja last. Potrebuješ Nostr profil.');
+  });
+  document.getElementById('btnUcnaPonudba').addEventListener('click', function(){
+    kliknjenoDodaj('izobrazevanje','Za oddajo učne ponudbe poveži Nostr',
+      'Ponudba se objavi kot tvoj NIP-99 dogodek (brezplačno ali plačljivo). Potrebuješ Nostr profil.');
+  });
+
+  // radio brezplačno / plačljivo
+  document.getElementById('fPlacilo').addEventListener('click', function(e){
+    var c = e.target.closest('.radio-cip'); if(!c) return;
+    this.querySelectorAll('.radio-cip').forEach(function(x){x.classList.remove('izbran')});
+    c.classList.add('izbran'); placiloIzbran = c.dataset.v;
+    document.getElementById('fCenaWrap').style.display = (placiloIzbran==='brezplacno') ? 'none' : 'flex';
+  });
+  document.getElementById('fSlike').addEventListener('click', function(){ pokaziToast('Nalaganje slik + moderacija (demo)'); });
+  document.getElementById('formPreklici').addEventListener('click', zapriForm);
+  maskForm.addEventListener('click', function(e){ if(e.target===maskForm) zapriForm(); });
+  document.getElementById('formObjavi').addEventListener('click', function(){
+    var naslov = document.getElementById('fNaslov').value.trim();
+    if(!naslov){ pokaziToast('Vnesi naslov'); return; }
+    zapriForm();
+    pokaziToast('Objavljeno kot podpisan NIP-99 dogodek na relayje ✓ (demo)');
+    document.getElementById('fNaslov').value=''; document.getElementById('fOpis').value='';
+    document.getElementById('fCena').value=''; document.getElementById('fLokacija').value=''; document.getElementById('fKontakt').value='';
+  });
+
+  // akcije (like, zap, kontakt, komentar)
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('.akcija, .btn-kontakt'); if(!b) return;
+    var a = b.dataset.akcija;
+    if(!prijavljen){ odpriModal(); pokaziToast('Za interakcijo poveži Nostr profil'); return; }
+    if(a==='like'){
+      var n=b.querySelector('.n'); if(!n) return;
+      var c=parseInt(n.textContent)||0;
+      if(b.classList.contains('aktivna')){b.classList.remove('aktivna');b.querySelector('span').textContent='🤍';n.textContent=c-1;}
+      else{b.classList.add('aktivna');b.querySelector('span').textContent='❤️';n.textContent=c+1;pokaziToast('Všeček objavljen na Nostr (demo)');}
+    } else if(a==='zap'){ b.classList.add('aktivna'); pokaziToast('⚡ Zap poslan prek Lightning (demo)'); }
+    else if(a==='komentar'){ pokaziToast('Komentar se objavi kot Nostr dogodek (demo)'); }
+    else if(a==='kontakt'){ pokaziToast('Stik s ponudnikom prek Nostr sporočila (demo)'); }
+  });
+
+  // ===== Web of Trust: socialni dokaz + Priporočam/Prijavi (NIP-56) =====
+  var wotBarve = ['#16a34a','#2563eb','#7c3aed','#ea580c','#0891b2','#dc2626'];
+  var wotIni = ['MK','AN','JŽ','SP','TL','BK','NR','ČD'];
+  function miniAvti(n){
+    var k = Math.min(n,3), html='<span class="avti">';
+    for(var i=0;i<k;i++){ html += '<span style="background:'+wotBarve[(i+n)%wotBarve.length]+'">'+wotIni[(i*2+n)%wotIni.length]+'</span>'; }
+    return html+'</span>';
+  }
+  // socialni dokaz + gumb ⋯ na kartice ponudb
+  document.querySelectorAll('#oglasi .oglas, #ucnePonudbe .oglas').forEach(function(card,i){
+    var telo = card.querySelector('.oglas-telo');
+    var prod = telo.querySelector('.prodajalec');
+    var n = [6,3,8,2,5,4,7,1,9,3,6,2,5][i % 13];
+    var wot = document.createElement('div');
+    wot.className = 'wot';
+    wot.innerHTML = miniAvti(n) + '<span>Zaupa mu <b>'+n+'</b> iz tvoje mreže</span>';
+    telo.insertBefore(wot, prod);
+    var noga = card.querySelector('.oglas-noga');
+    var vec = document.createElement('button');
+    vec.className='vec'; vec.dataset.tip='oglas'; vec.textContent='⋯';
+    noga.appendChild(vec);
+  });
+  // gumb ⋯ (samo Prijavi) na novice
+  document.querySelectorAll('#feedNovice .karta').forEach(function(card){
+    var noga = card.querySelector('.karta-noga');
+    var vec = document.createElement('button');
+    vec.className='vec'; vec.dataset.tip='novica'; vec.textContent='⋯';
+    noga.appendChild(vec);
+  });
+
+  var kartaMeni = document.getElementById('kartaMeni');
+  document.addEventListener('click', function(e){
+    var v = e.target.closest('.vec');
+    if(v){
+      var r = v.getBoundingClientRect();
+      kartaMeni.style.top = (r.bottom+6)+'px';
+      kartaMeni.style.left = Math.max(8, Math.min(r.right-210, window.innerWidth-218))+'px';
+      kartaMeni.querySelector('[data-a="priporocam"]').style.display = (v.dataset.tip==='oglas')?'':'none';
+      kartaMeni.classList.add('odprt');
+      return;
+    }
+    if(!e.target.closest('#kartaMeni')) kartaMeni.classList.remove('odprt');
+  });
+  kartaMeni.addEventListener('click', function(e){
+    var el = e.target.closest('.km-el'); if(!el) return;
+    kartaMeni.classList.remove('odprt');
+    if(!prijavljen){ odpriModal(); pokaziToast('Za to dejanje poveži Nostr'); return; }
+    if(el.dataset.a==='priporocam') pokaziToast('Dodano med »Priporočam« — javna oznaka na Nostr (demo)');
+    else pokaziToast('Prijava oddana (NIP-56) — gre v uredniško vrsto (demo)');
+  });
+</script>
+</body>
+</html>

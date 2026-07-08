@@ -1,0 +1,14 @@
+# odvisnosti
+node_modules/
+# skrivnosti / okolje
+.env
+.env.*
+*.nsec
+# gradnja / začasno
+dist/
+build/
+.cache/
+.DS_Store
+# uredniška orodja
+.vscode/
+.idea/
