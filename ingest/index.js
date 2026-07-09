@@ -41,20 +41,27 @@ function absURL(href, base) {
   try { return new URL(href, base).href; } catch { return href; }
 }
 function kratko(t, n = 280) { return (t || '').replace(/\s+/g, ' ').trim().slice(0, n); }
+function plain(html) { return String(html || '').replace(/<[^>]+>/g, ' ').replace(/&[a-z#0-9]+;/gi, ' ').replace(/\s+/g, ' ').trim(); }
 
 // --- RSS ---
 async function zajemRss(vir, localFile) {
   const feed = localFile
     ? await rss.parseString(fs.readFileSync(localFile, 'utf8'))
     : await rss.parseURL(vir.url);
-  return (feed.items || []).map((it) => ({
-    naslov: kratko(it.title, 200),
-    povzetek: kratko(it.contentSnippet || it.summary || ''),   // samo povzetek, ne celo besedilo
-    url: it.link || it.guid || '',
-    datum: it.isoDate ? Math.floor(new Date(it.isoDate).getTime() / 1000) : Math.floor(Date.now() / 1000),
-    kategorija: vir.kategorija || 'obcina',
-    vir: vir.ime
-  }));
+  return (feed.items || []).map((it) => {
+    const telo = plain(it['content:encoded'] || it.content || '');
+    const snippet = plain(it.contentSnippet || it.summary || '');
+    // vzemi daljše/bolj informativno besedilo (prvi ~300 znakov), ne le "…"
+    const povz = kratko(telo.length > snippet.length ? telo : (snippet || telo), 300);
+    return {
+      naslov: kratko(it.title, 200),
+      povzetek: povz,
+      url: it.link || it.guid || '',
+      datum: it.isoDate ? Math.floor(new Date(it.isoDate).getTime() / 1000) : Math.floor(Date.now() / 1000),
+      kategorija: vir.kategorija || 'obcina',
+      vir: vir.ime
+    };
+  });
 }
 
 // headless zajem (za JS-renderirane strani) — playwright je opcijski
@@ -110,22 +117,21 @@ function dedup(items) {
 function sestaviDogodek(item, cfg) {
   const oznaka = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
   const d = crypto.createHash('sha256').update(item.url || item.naslov).digest('hex').slice(0, 32);
-  const pripis = `\n\n— Vir: ${item.vir}${item.url ? ' · ' + item.url : ''}`;
   return {
     kind: 30023,
     created_at: Math.floor(Date.now() / 1000),
     tags: [
       ['d', d],
       ['title', item.naslov],
-      ['summary', item.povzetek],
+      ['summary', item.povzetek],      // čist povzetek (prvi del besedila)
       ['published_at', String(item.datum)],
       ['t', oznaka],
       ['t', item.kategorija],
-      ['r', item.url],                 // povezava na vir
+      ['r', item.url],                 // povezava na vir (klikabilna v portalu)
       ['source', item.vir],            // ime vira (navedba)
       ['client', 'lokalna-skupnost-ingest']
     ],
-    content: (item.povzetek || item.naslov) + pripis   // povzetek + navedba vira (ne celo besedilo)
+    content: item.povzetek || item.naslov   // čisto besedilo; vir/povezava sta v tagih
   };
 }
 

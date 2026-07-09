@@ -106,21 +106,30 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
   var realNalozeno=false;
   function labNaslov(t){return {obcina:'Občina',sola:'Šola',dogodki:'Dogodki',skupnost:'Skupnost',varnost:'Varnost'}[t]||t;}
   function tagVal(ev,k){var f=(ev.tags||[]).find(function(x){return x[0]===k;});return f?f[1]:'';}
+  function escH(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function domena(u){try{return new URL(u).hostname.replace(/^www\./,'');}catch(e){return '';}}
   function naloziRealneNovice(){
-    if(realNalozeno||!window.NostrLS)return; 
+    if(realNalozeno||!window.NostrLS)return;
     window.NostrLS.fetchNews(50).then(function(evs){
       if(!evs||!evs.length)return; realNalozeno=true;
       var fN=document.getElementById('feedNovice');
       evs.sort(function(a,b){return b.created_at-a.created_at;}).forEach(function(ev){
         var kat=(ev.tags||[]).filter(function(x){return x[0]==='t'&&x[1]!==window.NostrLS.oznaka;}).map(function(x){return x[1];})[0]||'obcina';
-        var naslov=tagVal(ev,'title')||'(brez naslova)';
+        var naslov=escH(tagVal(ev,'title')||'(brez naslova)');
+        var povz=escH(tagVal(ev,'summary')||(ev.content||''));
+        var url=tagVal(ev,'r');
+        var virIme=tagVal(ev,'source');
+        var vir=escH(virIme||(window.NostrLS.npubOf(ev.pubkey).slice(0,12)+'…'));
+        var dom=domena(url);
+        var kratica=(virIme||'NO').replace(/[^A-Za-zČŠŽčšž]/g,'').slice(0,2).toUpperCase()||'NO';
+        var link=url?'<a class="vir-link" href="'+escH(url)+'" target="_blank" rel="noopener">Preberi'+(dom?' na '+escH(dom):'')+' →</a>':'';
         var art=document.createElement('template');
         art.innerHTML=('<article class="karta" data-kat="'+kat+'" data-id="'+ev.id+'" data-pubkey="'+ev.pubkey+'">'+
-          '<div class="karta-glava"><div class="vir '+kat+'">🟣</div><div class="vir-meta">'+
-          '<div class="vir-ime">'+window.NostrLS.npubOf(ev.pubkey).slice(0,12)+'…</div>'+
-          '<div class="vir-sub">Nostr · '+new Date(ev.created_at*1000).toLocaleDateString('sl')+'</div></div>'+
+          '<div class="karta-glava"><div class="vir '+kat+'">'+kratica+'</div><div class="vir-meta">'+
+          '<div class="vir-ime">'+vir+'</div>'+
+          '<div class="vir-sub">'+(dom||'Nostr')+' · '+new Date(ev.created_at*1000).toLocaleDateString('sl')+'</div></div>'+
           '<span class="oznaka-kat">'+labNaslov(kat)+'</span></div>'+
-          '<div class="karta-telo"><h3>'+naslov+'</h3><p>'+(ev.content||'').slice(0,160)+'</p></div>'+
+          '<div class="karta-telo"><h3>'+naslov+'</h3><p>'+povz+'</p>'+link+'</div>'+
           '<div class="karta-noga"><button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">0</span></button>'+
           '<button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">0</span></button>'+
           '<button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">0</span></button></div></article>').trim();
