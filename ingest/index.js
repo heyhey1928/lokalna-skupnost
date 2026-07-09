@@ -195,9 +195,24 @@ async function main() {
   console.log(`[ingest] sprejeto na vsaj enem relayju: ${ok}/${dogodki.length} (relayji: ${relays.join(', ')})`
     + (zavrnjeni ? `; ZAVRNJENIH: ${zavrnjeni} (primer razloga: ${primerZavrnitve})` : ''));
 
+  const oznakaKraja = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
+
+  // Čiščenje zastarelih objav (NIP-09): izbriši dogodke kraja, ki jih v tem teku ni več
+  try {
+    await sleep(1500);
+    const trenutniD = new Set(dogodki.map((e) => (e.tags.find((t) => t[0] === 'd') || [])[1]));
+    const obstojeci = await pool.querySync(relays, { kinds: [30023], authors: [pk], '#t': [oznakaKraja], limit: 500 });
+    const zaBrisanje = obstojeci.filter((e) => { const dt = (e.tags.find((t) => t[0] === 'd') || [])[1]; return dt && !trenutniD.has(dt); });
+    for (const e of zaBrisanje) {
+      const del = finalizeEvent({ kind: 5, created_at: Math.floor(Date.now() / 1000), tags: [['e', e.id]], content: 'zastarelo' }, sk);
+      await Promise.allSettled(pool.publish(relays, del));
+      await sleep(300);
+    }
+    console.log(`[ingest] pobrisanih zastarelih (NIP-09): ${zaBrisanje.length}`);
+  } catch (e) { console.log(`[ingest] čiščenje ni uspelo: ${e.message}`); }
+
   // Preverjanje berljivosti takoj po objavi (diagnostika)
   await sleep(2500);
-  const oznakaKraja = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
   for (const r of relays) {
     try {
       const poAvtorju = await pool.querySync([r], { kinds: [30023], authors: [pk], limit: 200 });
