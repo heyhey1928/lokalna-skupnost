@@ -102,7 +102,20 @@ async function zajemScrape(vir, opts = {}) {
       kategorija: vir.kategorija || 'obcina', vir: vir.ime
     });
   });
-  return out.slice(0, vir.maks || 30);
+  let rez = out.slice(0, vir.maks || 30);
+  // če v seznamu ni povzetka, ga potegni iz posameznega članka (prvi smiseln odstavek)
+  if (vir.povzetek_iz_clanka) {
+    for (const it of rez) {
+      if (it.povzetek && it.povzetek.length > 20) continue;
+      try {
+        const $c = cheerio.load(await (await fetch(it.url)).text());
+        const p = $c('.kv-vsebina p, article p, .content p, .entry p, main p, p')
+          .filter((i, e) => plain($c(e).text()).length > 40).first();
+        it.povzetek = kratko(plain(p.text()), 300);
+      } catch (e) { /* preskoči, ostane brez povzetka */ }
+    }
+  }
+  return rez;
 }
 
 function dedup(items) {

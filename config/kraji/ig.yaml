@@ -30,14 +30,14 @@ viri:
 
   - tip: scrape
     ime: "Občina Ig"
-    url: "https://www.obcina-ig.si/"     # rubrika "Aktualno" (vgrajen mojaobcina.si seznam)
+    url: "https://www.mojaobcina.si/ig/novice/"   # vir "Aktualno" (server-renderiran; obcina-ig.si ga le vgradi z JS)
     kategorija: "obcina"
-    maks: 15
+    maks: 12
+    povzetek_iz_clanka: true      # povzetek potegni iz posameznega članka (v seznamu ga ni)
     selektor:
-      item: ".mo-novica"
-      naslov: "h2"
-      povezava: "a"
-      povzetek: ".mo-besedilo"
+      item: "article.kvadrat-vsebine-clean"
+      naslov: "h3.kv-naslov"
+      povezava: "h3.kv-naslov a"
 
   - tip: scrape
     ime: "Vrtec Ig"
