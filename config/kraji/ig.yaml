@@ -28,10 +28,16 @@ viri:
     url: "https://www.osig.si/feed/"
     kategorija: "sola"
 
-  - tip: rss
+  - tip: scrape
     ime: "Občina Ig"
-    url: "https://www.obcina-ig.si/feed/"   # WordPress feed = rubrika "Aktualno" (čisto, brez menijskega šuma)
+    url: "https://www.obcina-ig.si/"     # rubrika "Aktualno" (vgrajen mojaobcina.si seznam)
     kategorija: "obcina"
+    maks: 15
+    selektor:
+      item: ".mo-novica"
+      naslov: "h2"
+      povezava: "a"
+      povzetek: ".mo-besedilo"
 
   - tip: scrape
     ime: "Vrtec Ig"
