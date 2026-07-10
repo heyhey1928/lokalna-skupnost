@@ -22,6 +22,8 @@ nostr:
   uredniki_npub: []              # allowlist urednikov (WoT / kuracija)
 
 # Politika: objavimo NASLOV + POVZETEK + POVEZAVO (z navedbo vira), ne celega besedila.
+max_starost_dni: 90            # ne objavljaj novic, starejših od 90 dni (kjer je datum znan)
+
 viri:
   - tip: rss
     ime: "OŠ Ig"
@@ -50,8 +52,8 @@ viri:
     ime: "Morostig — Hiša narave in kolišč"
     url: "https://morostig.si/aktualno/"
     kategorija: "dogodki"
-    maks: 20
-    selektor: { item: "", naslov: "", povezava: "", povzetek: "" }
+    maks: 10
+    povezava_vzorec: "/aktualno/"   # Gatsby (premešani razredi) — zberi po vzorcu; naslov/povzetek/datum iz članka
 
   # --- Facebook: PRIPRAVLJENO, a ONEMOGOČENO (glej ingest/adapters/facebook.js) ---
   # Zaprti skupini; vklopi (enabled: true) šele po dogovoru z administratorji.

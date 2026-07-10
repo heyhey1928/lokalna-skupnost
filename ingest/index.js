@@ -77,7 +77,20 @@ async function fetchHtmlHeadless(url) {
   } finally { await browser.close(); }
 }
 
-// --- SCRAPE (naslov + povzetek + povezava) ---
+// preberi naslov / povzetek / datum iz posamezne strani članka (Open Graph + prvi odstavek)
+async function metaClanka(url) {
+  const $ = cheerio.load(await (await fetch(url)).text());
+  const meta = (k) => $('meta[property="' + k + '"]').attr('content') || $('meta[name="' + k + '"]').attr('content') || '';
+  const naslov = kratko(meta('og:title') || $('h1').first().text() || $('title').text() || '', 200);
+  const pEl = $('.kv-vsebina p, article p, main p, .content p, .entry p, p')
+    .filter((i, e) => plain($(e).text()).length > 40).first();
+  const povzetek = kratko(meta('og:description') || plain(pEl.text()), 300);
+  const dstr = meta('article:published_time') || meta('article:modified_time') || meta('og:updated_time') || $('time').attr('datetime') || '';
+  const datum = dstr ? Math.floor(new Date(dstr).getTime() / 1000) : 0;
+  return { naslov, povzetek, datum };
+}
+
+// --- SCRAPE ---
 async function zajemScrape(vir, opts = {}) {
   let html;
   if (opts.file) html = fs.readFileSync(opts.file, 'utf8');
@@ -85,6 +98,28 @@ async function zajemScrape(vir, opts = {}) {
   else if (vir.js_render) html = await fetchHtmlHeadless(vir.url);
   else html = await (await fetch(vir.url)).text();
   const $ = cheerio.load(html);
+
+  // Način A: zbiranje po vzorcu povezave (npr. Gatsby s premešanimi razredi) — naslov/povzetek/datum iz članka
+  if (vir.povezava_vzorec) {
+    const seen = new Set(); const urls = [];
+    $('a').each((_, a) => {
+      const h = $(a).attr('href') || '';
+      if (!h.includes(vir.povezava_vzorec)) return;
+      const abs = absURL(h, vir.url);
+      if (abs.replace(/\/$/, '') === vir.url.replace(/\/$/, '')) return; // indeksna stran
+      if (seen.has(abs)) return; seen.add(abs); urls.push(abs);
+    });
+    const rez = [];
+    for (const u of urls.slice(0, vir.maks || 30)) {
+      try {
+        const m = await metaClanka(u);
+        if (m.naslov && m.naslov.length > 8) rez.push({ naslov: m.naslov, povzetek: m.povzetek, url: u, datum: m.datum, kategorija: vir.kategorija || 'obcina', vir: vir.ime });
+      } catch (e) { /* preskoči */ }
+    }
+    return rez;
+  }
+
+  // Način B: selektorji na seznamu
   const s = vir.selektor || {};
   const $items = s.item ? $(s.item) : $('article, .novica, .news-item, .post, li:has(a)');
   const out = [];
@@ -96,23 +131,17 @@ async function zajemScrape(vir, opts = {}) {
     const url = absURL($a.attr('href'), vir.url);
     let povzetek = s.povzetek ? el.find(s.povzetek).first().text() : el.find('p').first().text();
     povzetek = kratko(povzetek);
-    if (naslov && url && naslov.length > 8) out.push({
-      naslov, povzetek, url,
-      datum: Math.floor(Date.now() / 1000),
-      kategorija: vir.kategorija || 'obcina', vir: vir.ime
-    });
+    if (naslov && url && naslov.length > 8) out.push({ naslov, povzetek, url, datum: 0, kategorija: vir.kategorija || 'obcina', vir: vir.ime });
   });
   let rez = out.slice(0, vir.maks || 30);
-  // če v seznamu ni povzetka, ga potegni iz posameznega članka (prvi smiseln odstavek)
+  // dopolni povzetek/datum iz posameznega članka, kjer manjka
   if (vir.povzetek_iz_clanka) {
     for (const it of rez) {
-      if (it.povzetek && it.povzetek.length > 20) continue;
       try {
-        const $c = cheerio.load(await (await fetch(it.url)).text());
-        const p = $c('.kv-vsebina p, article p, .content p, .entry p, main p, p')
-          .filter((i, e) => plain($c(e).text()).length > 40).first();
-        it.povzetek = kratko(plain(p.text()), 300);
-      } catch (e) { /* preskoči, ostane brez povzetka */ }
+        const m = await metaClanka(it.url);
+        if (!it.povzetek || it.povzetek.length < 20) it.povzetek = m.povzetek;
+        if (!it.datum) it.datum = m.datum;
+      } catch (e) { /* preskoči */ }
     }
   }
   return rez;
@@ -130,14 +159,15 @@ function dedup(items) {
 function sestaviDogodek(item, cfg) {
   const oznaka = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
   const d = crypto.createHash('sha256').update(item.url || item.naslov).digest('hex').slice(0, 32);
+  const cas = item.datum || Math.floor(Date.now() / 1000);   // pravi datum objave (stabilen vrstni red, brez dnevnega premikanja)
   return {
     kind: 30023,
-    created_at: Math.floor(Date.now() / 1000),
+    created_at: cas,
     tags: [
       ['d', d],
       ['title', item.naslov],
       ['summary', item.povzetek],      // čist povzetek (prvi del besedila)
-      ['published_at', String(item.datum)],
+      ['published_at', String(cas)],
       ['t', oznaka],
       ['t', item.kategorija],
       ['r', item.url],                 // povezava na vir (klikabilna v portalu)
@@ -184,6 +214,15 @@ async function main() {
   }
   postavke = dedup(postavke);
   console.log(`[ingest] skupaj po dedup: ${postavke.length}`);
+
+  // Starostni filter: izpusti prestare novice (kjer je datum znan)
+  const maxDni = cfg.max_starost_dni || 0;
+  if (maxDni) {
+    const meja = Math.floor(Date.now() / 1000) - maxDni * 86400;
+    const pred = postavke.length;
+    postavke = postavke.filter((it) => !it.datum || it.datum >= meja);
+    console.log(`[ingest] starostni filter (${maxDni} dni): ${pred} -> ${postavke.length}`);
+  }
 
   const dogodki = postavke.map((it) => finalizeEvent(sestaviDogodek(it, cfg), sk));
 
