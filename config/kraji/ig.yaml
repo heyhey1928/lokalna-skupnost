@@ -42,13 +42,6 @@ viri:
       povezava: "h3.kv-naslov a"
 
   - tip: scrape
-    ime: "Vrtec Ig"
-    url: "https://vrtec-ig.si/"
-    kategorija: "sola"
-    js_render: true   # stran je JS-renderirana -> potreben headless zajem (Playwright); sicer se preskoči
-    selektor: { item: "", naslov: "", povezava: "", povzetek: "" }
-
-  - tip: scrape
     ime: "Morostig — Hiša narave in kolišč"
     url: "https://morostig.si/aktualno/"
     kategorija: "dogodki"

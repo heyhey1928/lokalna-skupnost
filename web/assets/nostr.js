@@ -103,6 +103,11 @@ const NostrLS = {
     try { return await pool.querySync(RELAYS_R, { kinds: [30023], "#t": [OZNAKA], limit }); }
     catch { return []; }
   },
+  // Branje koledarskih dogodkov (NIP-52, kind 31922/31923) po oznaki
+  async fetchEvents(limit = 100) {
+    try { return await pool.querySync(RELAYS_R, { kinds: [31922, 31923], "#t": [OZNAKA], limit }); }
+    catch { return []; }
+  },
   npubOf
 };
 

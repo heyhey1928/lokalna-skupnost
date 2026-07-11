@@ -140,6 +140,36 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
   window.addEventListener('nostr-ready', naloziRealneNovice);
   if(window.NostrLS) naloziRealneNovice();
 
+  // prihajajoči dogodki (NIP-52) — nadomesti demo, če obstajajo pravi
+  function mesecKratek(m){return ['jan','feb','mar','apr','maj','jun','jul','avg','sep','okt','nov','dec'][m-1]||'';}
+  function naloziDogodke(){
+    if(!window.NostrLS || !window.NostrLS.fetchEvents) return;
+    window.NostrLS.fetchEvents(100).then(function(evs){
+      if(!evs||!evs.length) return;
+      var danes=new Date(); danes.setHours(0,0,0,0);
+      var list=evs.map(function(ev){
+        var g=function(k){return (ev.tags.find(function(t){return t[0]===k;})||[])[1]||'';};
+        var start=g('start'), dt=null;
+        if(/^\d{4}-\d{2}-\d{2}/.test(start)) dt=new Date(start+'T00:00:00');
+        else if(/^\d+$/.test(start)) dt=new Date(parseInt(start)*1000);
+        return {dt:dt, naslov:g('title'), kje:g('location')||g('source'), url:g('r')};
+      }).filter(function(x){return x.dt && x.dt>=danes;})
+        .sort(function(a,b){return a.dt-b.dt;}).slice(0,6);
+      if(!list.length) return;
+      var dg=document.querySelector('#stranNovice .panel-telo'); if(!dg) return;
+      dg.innerHTML='';
+      list.forEach(function(e){
+        var el=document.createElement('div'); el.className='dogodek';
+        el.innerHTML='<div class="datum"><div class="d">'+String(e.dt.getDate()).padStart(2,'0')+'</div><div class="m">'+mesecKratek(e.dt.getMonth()+1)+'</div></div>'+
+          '<div><div class="dogodek-ime">'+escH(e.naslov)+'</div><div class="dogodek-loc">'+escH(e.kje)+'</div></div>';
+        if(e.url){ el.style.cursor='pointer'; el.addEventListener('click',function(){window.open(e.url,'_blank');}); }
+        dg.appendChild(el);
+      });
+    }).catch(function(){});
+  }
+  window.addEventListener('nostr-ready', naloziDogodke);
+  if(window.NostrLS) naloziDogodke();
+
   var POGLEDI={novice:{feed:'feedNovice',kat:'katNovice',stran:'stranNovice',tarce:'#feedNovice .karta'},trznica:{feed:'feedTrznica',kat:'katTrznica',stran:'stranTrznica',tarce:'#oglasi .oglas'},izobrazevanje:{feed:'feedIzobrazevanje',kat:'katIzobrazevanje',stran:'stranIzobrazevanje',tarce:'#ucnePonudbe .oglas'}};
   var aktivniPogled='novice';
   document.querySelectorAll('.pogled-tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.pogled-tab').forEach(function(x){x.classList.remove('aktiven')});t.classList.add('aktiven');aktivniPogled=t.dataset.pogled;Object.keys(POGLEDI).forEach(function(p){var akt=(p===aktivniPogled),c=POGLEDI[p];document.getElementById(c.feed).classList.toggle('skrit',!akt);document.getElementById(c.kat).classList.toggle('skrit',!akt);document.getElementById(c.stran).classList.toggle('skrit',!akt);});document.getElementById('iskalnik').value='';});});

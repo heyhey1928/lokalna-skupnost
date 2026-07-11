@@ -56,6 +56,7 @@ async function zajemRss(vir, localFile) {
     return {
       naslov: kratko(it.title, 200),
       povzetek: povz,
+      telo: telo,
       url: it.link || it.guid || '',
       datum: it.isoDate ? Math.floor(new Date(it.isoDate).getTime() / 1000) : Math.floor(Date.now() / 1000),
       kategorija: vir.kategorija || 'obcina',
@@ -87,7 +88,11 @@ async function metaClanka(url) {
   const povzetek = kratko(meta('og:description') || plain(pEl.text()), 300);
   const dstr = meta('article:published_time') || meta('article:modified_time') || meta('og:updated_time') || $('time').attr('datetime') || '';
   const datum = dstr ? Math.floor(new Date(dstr).getTime() / 1000) : 0;
-  return { naslov, povzetek, datum };
+  // polno besedilo članka (za zaznavo datuma dogodka; ni objavljeno)
+  const cont = $('.kv-vsebina, article, main, .content, .entry-content, .entry').first();
+  let telo = cont.length ? plain(cont.text()) : $('p').map((i, e) => $(e).text()).get().join(' ');
+  telo = plain(telo).slice(0, 5000);
+  return { naslov, povzetek, datum, telo };
 }
 
 // --- SCRAPE ---
@@ -113,7 +118,7 @@ async function zajemScrape(vir, opts = {}) {
     for (const u of urls.slice(0, vir.maks || 30)) {
       try {
         const m = await metaClanka(u);
-        if (m.naslov && m.naslov.length > 8) rez.push({ naslov: m.naslov, povzetek: m.povzetek, url: u, datum: m.datum, kategorija: vir.kategorija || 'obcina', vir: vir.ime });
+        if (m.naslov && m.naslov.length > 8) rez.push({ naslov: m.naslov, povzetek: m.povzetek, telo: m.telo, url: u, datum: m.datum, kategorija: vir.kategorija || 'obcina', vir: vir.ime });
       } catch (e) { /* preskoči */ }
     }
     return rez;
@@ -141,6 +146,7 @@ async function zajemScrape(vir, opts = {}) {
         const m = await metaClanka(it.url);
         if (!it.povzetek || it.povzetek.length < 20) it.povzetek = m.povzetek;
         if (!it.datum) it.datum = m.datum;
+        it.telo = m.telo;
       } catch (e) { /* preskoči */ }
     }
   }
@@ -153,6 +159,55 @@ function dedup(items) {
     const k = i.url || (i.vir + i.naslov);
     if (seen.has(k)) return false; seen.add(k); return true;
   });
+}
+
+// --- Zaznava koledarskih dogodkov (NIP-52) ---
+const MES3 = { jan: 1, feb: 2, mar: 3, apr: 4, maj: 5, jun: 6, jul: 7, avg: 8, sep: 9, okt: 10, nov: 11, dec: 12 };
+const DOGODEK_KW = /(prired|dogodek|dogodku|vabljen|vabimo|koncert|delavnic|sejem|veselic|razstav|predavanj|pohod|tekmovanj|kviz|sre[čc]anj|proslav|festival|nastop|praznovanj|akcij|krvodajal|delavnica|piknik|kolesarj|tek\b)/i;
+
+function razcleniDatumi(text) {
+  if (!text) return [];
+  const t = text.toLowerCase(); const out = []; let m;
+  let re = /(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/g;                  // 8. 7. 2026
+  while ((m = re.exec(t))) { const d = +m[1], mo = +m[2], y = +m[3]; if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) out.push({ y, mo, d }); }
+  re = /(\d{1,2})\.\s*([a-zčšž]{3,})\s+(\d{4})/g;                   // 8. februar(ja) 2026
+  while ((m = re.exec(t))) { const d = +m[1], mo = MES3[m[2].slice(0, 3)], y = +m[3]; if (mo) out.push({ y, mo, d }); }
+  return out;
+}
+
+function zaznajDogodek(item) {
+  const besedilo = (item.naslov || '') + ' ' + (item.telo || item.povzetek || '');
+  const jeDogodek = item.kategorija === 'dogodki' || DOGODEK_KW.test(besedilo);
+  if (!jeDogodek) return null;
+  const zdaj = Math.floor(Date.now() / 1000) - 86400;
+  const kand = razcleniDatumi(besedilo)
+    .map((d) => ({ d, ts: Math.floor(Date.UTC(d.y, d.mo - 1, d.d) / 1000) }))
+    .filter((x) => x.ts >= zdaj)
+    .sort((a, b) => a.ts - b.ts);
+  if (!kand.length) return null;
+  const { d } = kand[0];
+  return { start: d.y + '-' + String(d.mo).padStart(2, '0') + '-' + String(d.d).padStart(2, '0'), ts: kand[0].ts };
+}
+
+// NIP-52 koledarski dogodek (kind 31922 — datumski)
+function sestaviDogodek52(item, dog, cfg) {
+  const oznaka = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
+  const d = crypto.createHash('sha256').update('dogodek:' + (item.url || item.naslov)).digest('hex').slice(0, 32);
+  return {
+    kind: 31922,
+    created_at: Math.floor(Date.now() / 1000),
+    tags: [
+      ['d', d],
+      ['title', item.naslov],
+      ['start', dog.start],
+      ['t', oznaka],
+      ['t', 'dogodek'],
+      ['r', item.url || ''],
+      ['source', item.vir],
+      ['client', 'lokalna-skupnost-ingest']
+    ],
+    content: item.povzetek || item.naslov
+  };
 }
 
 // --- NIP-23 dogodek z navedbo vira ---
@@ -226,9 +281,16 @@ async function main() {
 
   const dogodki = postavke.map((it) => finalizeEvent(sestaviDogodek(it, cfg), sk));
 
+  // Zaznaj koledarske dogodke (NIP-52) med vsemi viri
+  const koledar = postavke
+    .map((it) => ({ it, dg: zaznajDogodek(it) }))
+    .filter((x) => x.dg)
+    .map((x) => finalizeEvent(sestaviDogodek52(x.it, x.dg, cfg), sk));
+  console.log(`[ingest] zaznanih koledarskih dogodkov (NIP-52): ${koledar.length}`);
+
   if (!doPublish) {
-    if (dogodki[0]) { console.log('[ingest] SUHI TEK — primer dogodka:'); console.log(JSON.stringify(dogodki[0], null, 2)); }
-    console.log(`[ingest] zgrajenih in podpisanih: ${dogodki.length} (avtor ${nip19.npubEncode(pk).slice(0, 14)}…). Ni objavljeno.`);
+    if (dogodki[0]) { console.log('[ingest] SUHI TEK — primer novice:'); console.log(JSON.stringify(dogodki[0], null, 2)); }
+    console.log(`[ingest] zgrajenih: ${dogodki.length} novic + ${koledar.length} dogodkov (avtor ${nip19.npubEncode(pk).slice(0, 14)}…). Ni objavljeno.`);
     return;
   }
   const pool = new SimplePool();
@@ -262,6 +324,27 @@ async function main() {
     }
     console.log(`[ingest] pobrisanih zastarelih (NIP-09): ${zaBrisanje.length}`);
   } catch (e) { console.log(`[ingest] čiščenje ni uspelo: ${e.message}`); }
+
+  // Objava koledarskih dogodkov (NIP-52) + čiščenje zastarelih dogodkov
+  let dOk = 0;
+  for (const ev of koledar) {
+    const res = await Promise.allSettled(pool.publish(relays, ev));
+    if (res.some((r) => r.status === 'fulfilled')) dOk++;
+    await sleep(1000);
+  }
+  console.log(`[ingest] objavljenih dogodkov (NIP-52): ${dOk}/${koledar.length}`);
+  try {
+    await sleep(1500);
+    const trenutniDe = new Set(koledar.map((e) => (e.tags.find((t) => t[0] === 'd') || [])[1]));
+    const obstDogodki = await pool.querySync(relays, { kinds: [31922, 31923], authors: [pk], '#t': [oznakaKraja], limit: 500 });
+    const brisDe = obstDogodki.filter((e) => { const dt = (e.tags.find((t) => t[0] === 'd') || [])[1]; return dt && !trenutniDe.has(dt); });
+    for (const e of brisDe) {
+      const del = finalizeEvent({ kind: 5, created_at: Math.floor(Date.now() / 1000), tags: [['e', e.id]], content: 'zastarel dogodek' }, sk);
+      await Promise.allSettled(pool.publish(relays, del));
+      await sleep(300);
+    }
+    if (brisDe.length) console.log(`[ingest] pobrisanih zastarelih dogodkov: ${brisDe.length}`);
+  } catch (e) { console.log(`[ingest] čiščenje dogodkov ni uspelo: ${e.message}`); }
 
   // Preverjanje berljivosti takoj po objavi (diagnostika)
   await sleep(2500);
