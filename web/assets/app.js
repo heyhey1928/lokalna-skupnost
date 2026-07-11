@@ -35,6 +35,7 @@
           '<button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">'+(n.zap||0)+'</span></button>'+
         '</div></article>'));
   }); }
+  if(fN && (!D.novice || !D.novice.length)) fN.innerHTML='<div class="prazno-stanje">Nalagam novice…</div>';
 
   // TRŽNICA
   var fT=document.getElementById('oglasi');
@@ -50,6 +51,7 @@
           '<button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">'+pseudo(o.naslov)+'</span></button>'+
           '<button class="akcija zap" data-akcija="zap"><span>⚡</span></button></div></article>'));
   }); }
+  if(fT && (!D.trznica || !D.trznica.length)) fT.innerHTML='<div class="prazno-stanje">Tržnica je še prazna — bodi prvi in objavi ponudbo.</div>';
 
   // IZOBRAŽEVANJE
   var fI=document.getElementById('ucnePonudbe');
@@ -67,12 +69,14 @@
           '<button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">'+pseudo(o.naslov)+'</span></button>'+
           '<button class="akcija zap" data-akcija="zap"><span>⚡</span></button></div></article>'));
   }); }
+  if(fI && (!D.izobrazevanje || !D.izobrazevanje.length)) fI.innerHTML='<div class="prazno-stanje">Ni še učnih ponudb — bodi prvi in objavi.</div>';
 
   // DOGODKI (stranica)
   var dg=document.querySelector('#stranNovice .panel-telo');
   if(dg && D.dogodki){ dg.innerHTML=''; D.dogodki.forEach(function(e){
     dg.appendChild(el('<div class="dogodek"><div class="datum"><div class="d">'+esc(e.dan)+'</div><div class="m">'+esc(e.mesec)+'</div></div><div><div class="dogodek-ime">'+esc(e.ime)+'</div><div class="dogodek-loc">'+esc(e.kje)+'</div></div></div>'));
   }); }
+  if(dg && (!D.dogodki || !D.dogodki.length)) dg.innerHTML='<div style="padding:10px 2px;color:var(--ink-soft);font-size:13px">Ni napovedanih dogodkov.</div>';
 })();
 
 var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.getElementById('maskForm'), toast=document.getElementById('toast');
@@ -111,8 +115,9 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
   function naloziRealneNovice(){
     if(realNalozeno||!window.NostrLS)return;
     window.NostrLS.fetchNews(50).then(function(evs){
-      if(!evs||!evs.length)return; realNalozeno=true;
       var fN=document.getElementById('feedNovice');
+      if(!evs||!evs.length){ if(fN) fN.innerHTML='<div class="prazno-stanje">Trenutno ni novic.</div>'; return; }
+      realNalozeno=true; fN.innerHTML='';
       evs.sort(function(a,b){return b.created_at-a.created_at;}).forEach(function(ev){
         var kat=(ev.tags||[]).filter(function(x){return x[0]==='t'&&x[1]!==window.NostrLS.oznaka;}).map(function(x){return x[1];})[0]||'obcina';
         var naslov=escH(tagVal(ev,'title')||'(brez naslova)');
@@ -133,7 +138,7 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
           '<div class="karta-noga"><button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">0</span></button>'+
           '<button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">0</span></button>'+
           '<button class="akcija zap" data-akcija="zap"><span>⚡</span><span class="n">0</span></button></div></article>').trim();
-        fN.insertBefore(art.content.firstChild, fN.firstChild);
+        fN.appendChild(art.content.firstChild);
       });
     }).catch(function(){});
   }
