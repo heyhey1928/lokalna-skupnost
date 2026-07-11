@@ -92,7 +92,24 @@ async function metaClanka(url) {
   const cont = $('.kv-vsebina, article, main, .content, .entry-content, .entry').first();
   let telo = cont.length ? plain(cont.text()) : $('p').map((i, e) => $(e).text()).get().join(' ');
   telo = plain(telo).slice(0, 5000);
-  return { naslov, povzetek, datum, telo };
+  // strukturiran dogodek: schema.org Event (JSON-LD)
+  let eventStart = '', lokacija = '';
+  $('script[type="application/ld+json"]').each((_, e) => {
+    try {
+      const j = JSON.parse($(e).text());
+      const arr = Array.isArray(j) ? j : (j['@graph'] || [j]);
+      for (const o of arr) {
+        const ty = o && o['@type'];
+        const jeEvent = ty && (ty === 'Event' || (Array.isArray(ty) && ty.includes('Event')) || String(ty).includes('Event'));
+        if (jeEvent) {
+          if (o.startDate) eventStart = String(o.startDate);
+          if (o.location) lokacija = o.location.name || (typeof o.location === 'string' ? o.location : '') ||
+            (o.location.address && (o.location.address.streetAddress || o.location.address.addressLocality)) || '';
+        }
+      }
+    } catch (err) { /* neveljaven JSON-LD */ }
+  });
+  return { naslov, povzetek, datum, telo, eventStart, lokacija };
 }
 
 // --- SCRAPE ---
@@ -118,7 +135,7 @@ async function zajemScrape(vir, opts = {}) {
     for (const u of urls.slice(0, vir.maks || 30)) {
       try {
         const m = await metaClanka(u);
-        if (m.naslov && m.naslov.length > 8) rez.push({ naslov: m.naslov, povzetek: m.povzetek, telo: m.telo, url: u, datum: m.datum, kategorija: vir.kategorija || 'obcina', vir: vir.ime });
+        if (m.naslov && m.naslov.length > 8) rez.push({ naslov: m.naslov, povzetek: m.povzetek, telo: m.telo, url: u, datum: m.datum, eventStart: m.eventStart, lokacija: m.lokacija, kategorija: vir.kategorija || 'obcina', vir: vir.ime });
       } catch (e) { /* preskoči */ }
     }
     return rez;
@@ -147,6 +164,7 @@ async function zajemScrape(vir, opts = {}) {
         if (!it.povzetek || it.povzetek.length < 20) it.povzetek = m.povzetek;
         if (!it.datum) it.datum = m.datum;
         it.telo = m.telo;
+        it.eventStart = m.eventStart; it.lokacija = m.lokacija;
       } catch (e) { /* preskoči */ }
     }
   }
@@ -163,7 +181,7 @@ function dedup(items) {
 
 // --- Zaznava koledarskih dogodkov (NIP-52) ---
 const MES3 = { jan: 1, feb: 2, mar: 3, apr: 4, maj: 5, jun: 6, jul: 7, avg: 8, sep: 9, okt: 10, nov: 11, dec: 12 };
-const DOGODEK_KW = /(prired|dogodek|dogodku|vabljen|vabimo|koncert|delavnic|sejem|veselic|razstav|predavanj|pohod|tekmovanj|kviz|sre[čc]anj|proslav|festival|nastop|praznovanj|akcij|krvodajal|delavnica|piknik|kolesarj|tek\b)/i;
+const DOGODEK_KW = /(prired|dogodek|dogodku|vabljen|vabimo|vabil|prijav|organizir|koncert|delavnic|ustvarjaln|sejem|veselic|razstav|predavanj|pohod|tekmov|kviz|sre[čc]anj|proslav|festival|nastop|praznovanj|akcij|krvodajal|piknik|kolesarj|turnir|igre|no[čc]\b|muzejsk|poteka|potekal|odprtih vrat)/i;
 
 function razcleniDatumi(text) {
   if (!text) return [];
@@ -176,38 +194,44 @@ function razcleniDatumi(text) {
 }
 
 function zaznajDogodek(item) {
+  const zdaj = Math.floor(Date.now() / 1000) - 86400;
+  // 1) strukturiran datum (schema.org Event / JSON-LD) — najzanesljivejši
+  if (item.eventStart) {
+    const dt = new Date(item.eventStart);
+    if (!isNaN(dt.getTime())) {
+      const ts = Math.floor(dt.getTime() / 1000);
+      if (ts >= zdaj) return { start: item.eventStart.slice(0, 10), ts, lokacija: item.lokacija || '' };
+    }
+  }
+  // 2) tekstovna hevristika (za dogodke, skrite v novicah)
   const besedilo = (item.naslov || '') + ' ' + (item.telo || item.povzetek || '');
   const jeDogodek = item.kategorija === 'dogodki' || DOGODEK_KW.test(besedilo);
   if (!jeDogodek) return null;
-  const zdaj = Math.floor(Date.now() / 1000) - 86400;
   const kand = razcleniDatumi(besedilo)
     .map((d) => ({ d, ts: Math.floor(Date.UTC(d.y, d.mo - 1, d.d) / 1000) }))
     .filter((x) => x.ts >= zdaj)
-    .sort((a, b) => a.ts - b.ts);
+    .sort((a, b) => b.ts - a.ts);   // najkasnejši prihodnji (dogodek je običajno za rokom prijave)
   if (!kand.length) return null;
-  const { d } = kand[0];
-  return { start: d.y + '-' + String(d.mo).padStart(2, '0') + '-' + String(d.d).padStart(2, '0'), ts: kand[0].ts };
+  const d = kand[0].d;
+  return { start: d.y + '-' + String(d.mo).padStart(2, '0') + '-' + String(d.d).padStart(2, '0'), ts: kand[0].ts, lokacija: item.lokacija || '' };
 }
 
 // NIP-52 koledarski dogodek (kind 31922 — datumski)
 function sestaviDogodek52(item, dog, cfg) {
   const oznaka = (cfg.nostr && cfg.nostr.oznaka) || 'ls';
   const d = crypto.createHash('sha256').update('dogodek:' + (item.url || item.naslov)).digest('hex').slice(0, 32);
-  return {
-    kind: 31922,
-    created_at: Math.floor(Date.now() / 1000),
-    tags: [
-      ['d', d],
-      ['title', item.naslov],
-      ['start', dog.start],
-      ['t', oznaka],
-      ['t', 'dogodek'],
-      ['r', item.url || ''],
-      ['source', item.vir],
-      ['client', 'lokalna-skupnost-ingest']
-    ],
-    content: item.povzetek || item.naslov
-  };
+  const tags = [
+    ['d', d],
+    ['title', item.naslov],
+    ['start', dog.start],
+    ['t', oznaka],
+    ['t', 'dogodek'],
+    ['r', item.url || ''],
+    ['source', item.vir],
+    ['client', 'lokalna-skupnost-ingest']
+  ];
+  if (dog.lokacija) tags.push(['location', dog.lokacija]);
+  return { kind: 31922, created_at: Math.floor(Date.now() / 1000), tags, content: item.povzetek || item.naslov };
 }
 
 // --- NIP-23 dogodek z navedbo vira ---

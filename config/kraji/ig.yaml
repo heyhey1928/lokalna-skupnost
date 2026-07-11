@@ -42,6 +42,13 @@ viri:
       povezava: "h3.kv-naslov a"
 
   - tip: scrape
+    ime: "Občina Ig — dogodki"
+    url: "https://www.mojaobcina.si/ig/dogodki/"   # dedicirana rubrika Dogodki (strukturirano, JSON-LD)
+    kategorija: "dogodki"
+    maks: 15
+    povezava_vzorec: "/dogodki/"
+
+  - tip: scrape
     ime: "Morostig — Hiša narave in kolišč"
     url: "https://morostig.si/aktualno/"
     kategorija: "dogodki"
