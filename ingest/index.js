@@ -85,13 +85,18 @@ async function metaClanka(url) {
   const naslov = kratko(meta('og:title') || $('h1').first().text() || $('title').text() || '', 200);
   const pEl = $('.kv-vsebina p, article p, main p, .content p, .entry p, p')
     .filter((i, e) => plain($(e).text()).length > 40).first();
-  const povzetek = kratko(meta('og:description') || plain(pEl.text()), 300);
+  const povzetek = kratko(plain(meta('og:description')) || plain(pEl.text()), 300);
   const dstr = meta('article:published_time') || meta('article:modified_time') || meta('og:updated_time') || $('time').attr('datetime') || '';
-  const datum = dstr ? Math.floor(new Date(dstr).getTime() / 1000) : 0;
+  let datum = dstr ? Math.floor(new Date(dstr).getTime() / 1000) : 0;
   // polno besedilo članka (za zaznavo datuma dogodka; ni objavljeno)
   const cont = $('.kv-vsebina, article, main, .content, .entry-content, .entry').first();
   let telo = cont.length ? plain(cont.text()) : $('p').map((i, e) => $(e).text()).get().join(' ');
   telo = plain(telo).slice(0, 5000);
+  // če ni strukturiranega datuma objave, uporabi najkasnejši datum iz besedila (za pravilen vrstni red + starostni filter)
+  if (!datum) {
+    const ds = razcleniDatumi((naslov || '') + ' ' + telo).map((d) => Math.floor(Date.UTC(d.y, d.mo - 1, d.d) / 1000));
+    if (ds.length) datum = Math.max.apply(null, ds);
+  }
   // strukturiran dogodek: schema.org Event (JSON-LD)
   let eventStart = '', lokacija = '';
   $('script[type="application/ld+json"]').each((_, e) => {
@@ -181,7 +186,7 @@ function dedup(items) {
 
 // --- Zaznava koledarskih dogodkov (NIP-52) ---
 const MES3 = { jan: 1, feb: 2, mar: 3, apr: 4, maj: 5, jun: 6, jul: 7, avg: 8, sep: 9, okt: 10, nov: 11, dec: 12 };
-const DOGODEK_KW = /(prired|dogodek|dogodku|vabljen|vabimo|vabil|prijav|organizir|koncert|delavnic|ustvarjaln|sejem|veselic|razstav|predavanj|pohod|tekmov|kviz|sre[čc]anj|proslav|festival|nastop|praznovanj|akcij|krvodajal|piknik|kolesarj|turnir|igre|no[čc]\b|muzejsk|poteka|potekal|odprtih vrat)/i;
+const DOGODEK_KW = /(prireditev|prireditv|dogodek|dogodku|dogodki|vabljen|vabimo|vabil|prijave na|koncert|delavnic|ustvarjaln|sejem|veselic|razstav|predavanj|pohod|tekmovanj|tekmovaln|kviz|sre[čc]anj|proslav|festival|nastop|praznovanj|golažijad|krvodajal|piknik|kolesarjenj|turnir|igre brez|muzejsk[ae] no[čc]|odprtih vrat)/i;
 
 function razcleniDatumi(text) {
   if (!text) return [];

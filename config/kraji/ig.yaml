@@ -46,7 +46,7 @@ viri:
     url: "https://www.mojaobcina.si/ig/dogodki/"   # dedicirana rubrika Dogodki (strukturirano, JSON-LD)
     kategorija: "dogodki"
     maks: 15
-    povezava_vzorec: "/dogodki/"
+    povezava_vzorec: "/ig/dogodki/"   # samo dogodki občine Ig (ne regijski/tuji)
 
   - tip: scrape
     ime: "Morostig — Hiša narave in kolišč"
