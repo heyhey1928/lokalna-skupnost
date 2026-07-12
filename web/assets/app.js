@@ -245,6 +245,8 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
     if(p==='odjava'){if(window.NostrLS)window.NostrLS.logout();prijavljen=false;document.getElementById('profilChip').style.display='none';document.getElementById('btnPrijava').style.display='flex';pokaziToast('Odjavljen');}
     else if(p==='npub'){var st=(window.NostrLS&&window.NostrLS.state)||{};if(st.npub&&navigator.clipboard)navigator.clipboard.writeText(st.npub);pokaziToast('npub kopiran'+(st.npub?' ✓':''));}
     else if(p==='profil'||p==='nastavitve'){odpriProfil(false);}
+    else if(p==='objave'){odpriMoje('trznica');}
+    else if(p==='ponudbe'){odpriMoje('izobrazevanje');}
     else{pokaziToast('Odpre se: '+el.textContent.trim()+' (demo)');}
     zapriMenije();});
   document.addEventListener('click',zapriMenije);
@@ -270,6 +272,38 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
   document.getElementById('pCopyNpub').addEventListener('click',function(){var v=document.getElementById('pNpub').value;if(v&&navigator.clipboard)navigator.clipboard.writeText(v);pokaziToast('npub kopiran ✓');});
   document.getElementById('pCopyNsec').addEventListener('click',function(){var v=window.NostrLS&&window.NostrLS.getNsec();if(v&&navigator.clipboard)navigator.clipboard.writeText(v);pokaziToast(v?'nsec kopiran — shrani na varno ✓':'ni zasebnega ključa');});
   document.getElementById('pOdjava').addEventListener('click',function(){if(window.NostrLS)window.NostrLS.logout();prijavljen=false;document.getElementById('profilChip').style.display='none';document.getElementById('btnPrijava').style.display='flex';maskProfil.classList.remove('odprt');pokaziToast('Odjavljen');});
+
+  // ===== MOJE OBJAVE (lastne NIP-99 objave, z brisanjem) =====
+  var maskMoje=document.getElementById('maskMoje');
+  function odpriMoje(section){
+    var NS=window.NostrLS;
+    if(!NS||!NS.state.method){ odpriModal(); pokaziToast('Najprej se poveži z Nostr profilom'); return; }
+    var izo=(section==='izobrazevanje');
+    document.getElementById('mojeNaslov').textContent=izo?'🎓 Moje učne ponudbe':'📝 Moje objave in oglasi';
+    var cont=document.getElementById('mojeSeznam'); cont.innerHTML='<div class="prazno-stanje">Nalagam…</div>';
+    maskMoje.classList.add('odprt');
+    NS.fetchMyListings(100).then(function(evs){
+      var list=(evs||[]).filter(function(ev){var ts=(ev.tags||[]).filter(function(t){return t[0]==='t';}).map(function(t){return t[1];});return ts.indexOf(section)>-1;}).sort(function(a,b){return b.created_at-a.created_at;});
+      if(!list.length){ cont.innerHTML='<div class="prazno-stanje">Nimaš še objav v tem sklopu.</div>'; return; }
+      cont.innerHTML='';
+      list.forEach(function(ev){
+        var g=function(k){return (ev.tags.find(function(t){return t[0]===k;})||[])[1]||'';};
+        var pr=(ev.tags.find(function(t){return t[0]==='price';})||[]); var cena=pr[1]?(pr[1]+' '+(pr[2]||'EUR')):'';
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line-2)';
+        row.innerHTML='<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">'+escH(g('title')||'(brez naslova)')+'</div><div style="font-size:12px;color:var(--ink-soft)">'+(escH(cena)||'—')+(g('location')?' · '+escH(g('location')):'')+'</div></div>';
+        var del=document.createElement('button'); del.className='btn-ghost'; del.textContent='Izbriši'; del.style.cssText='flex:0 0 auto;padding:7px 13px;color:#dc2626;border-radius:10px';
+        del.addEventListener('click',function(){
+          if(!window.confirm('Izbrišem to objavo?')) return;
+          del.textContent='Brišem…'; del.disabled=true;
+          NS.deleteEvent(ev.id).then(function(){ row.remove(); pokaziToast('Objava izbrisana (NIP-09) ✓'); setTimeout(function(){naloziPonudbe(section);},1200); if(!cont.children.length)cont.innerHTML='<div class="prazno-stanje">Nimaš več objav v tem sklopu.</div>'; });
+        });
+        row.appendChild(del); cont.appendChild(row);
+      });
+    }).catch(function(){ cont.innerHTML='<div class="prazno-stanje">Napaka pri branju objav.</div>'; });
+  }
+  document.getElementById('mojeZapri').addEventListener('click',function(){maskMoje.classList.remove('odprt');});
+  maskMoje.addEventListener('click',function(e){if(e.target===maskMoje)maskMoje.classList.remove('odprt');});
 
   // obrazec
   var KATEGORIJE={trznica:['Kmetijski pridelki in hrana','Domači predelani izdelki','Obrt in rokodelstvo','Storitve','Kmetija in živali','Kmečki turizem','Rabljeno / podarim','Delo'],izobrazevanje:['Jeziki','Računalništvo in digitalno','Glasba in umetnost','Kmetijstvo in vrt','Kuhanje in gospodinjstvo','Šport in rekreacija','Za otroke in mladino','Inštrukcije in učna pomoč','Osebna rast in poklic','Finančna pismenost']};

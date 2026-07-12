@@ -127,6 +127,16 @@ const NostrLS = {
     try { return await pool.querySync(RELAYS_R, { kinds: [30402], "#t": [OZNAKA], limit }); }
     catch { return []; }
   },
+  // Moje objave (NIP-99) — po avtorju (prijavljeni uporabnik)
+  async fetchMyListings(limit = 100) {
+    if (!state.pubkey) return [];
+    try { return await pool.querySync(RELAYS_R, { kinds: [30402], authors: [state.pubkey], limit }); }
+    catch { return []; }
+  },
+  // Izbris lastne objave (NIP-09, kind 5)
+  async deleteEvent(id) {
+    return publish(await sign({ kind: 5, created_at: now(), tags: [["e", id]], content: "izbris" }));
+  },
   npubOf
 };
 
