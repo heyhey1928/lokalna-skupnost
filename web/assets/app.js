@@ -102,7 +102,7 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
       if(nacin==='ext'){
         if(NS&&NS.hasExtension()) return NS.loginExtension().then(function(){poPrijavi('Povezan prek razširitve (NIP-07) ✓');});
         if(NS)NS.createAccount(); poPrijavi('Ni zaznane razširitve — ustvarjen začasen profil (demo)');
-      } else if(nacin==='nov'){ if(NS)NS.createAccount(); poPrijavi('Ustvarjen nov Nostr profil ✓'); }
+      } else if(nacin==='nov'){ if(NS)NS.createAccount(); poPrijavi('Ustvarjen nov Nostr profil ✓'); odpriProfil(true); }
       else { if(NS)NS.createAccount(); poPrijavi('NIP-46 (bunker) pride kmalu — začasen profil (demo)'); }
     }).catch(function(err){pokaziToast('Napaka pri prijavi: '+(err&&err.message||err));});
   });});
@@ -175,6 +175,55 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
   window.addEventListener('nostr-ready', naloziDogodke);
   if(window.NostrLS) naloziDogodke();
 
+  // obnovi prijavo iz prejšnjega obiska (obstojen profil na tej napravi)
+  function obnoviPrijavo(){
+    if(!window.NostrLS||!window.NostrLS.restore) return;
+    var s=window.NostrLS.restore();
+    if(s&&s.pubkey){ prijavljen=true; document.getElementById('btnPrijava').style.display='none'; document.getElementById('profilChip').style.display='flex'; osveziProfil(); }
+  }
+  window.addEventListener('nostr-ready', obnoviPrijavo);
+  if(window.NostrLS) obnoviPrijavo();
+
+  // izris oglasov / učnih ponudb (NIP-99) iz Nostr
+  function naloziPonudbe(section){
+    if(!window.NostrLS||!window.NostrLS.fetchListings) return;
+    var cont=document.getElementById(section==='izobrazevanje'?'ucnePonudbe':'oglasi'); if(!cont) return;
+    var izo=(section==='izobrazevanje');
+    window.NostrLS.fetchListings(100).then(function(evs){
+      var list=(evs||[]).filter(function(ev){
+        var ts=(ev.tags||[]).filter(function(t){return t[0]==='t';}).map(function(t){return t[1];});
+        return ts.indexOf(section)>-1;
+      }).sort(function(a,b){return b.created_at-a.created_at;});
+      if(!list.length) return;
+      cont.innerHTML='';
+      list.forEach(function(ev){
+        var g=function(k){return (ev.tags.find(function(t){return t[0]===k;})||[])[1]||'';};
+        var ts=(ev.tags||[]).filter(function(t){return t[0]==='t';}).map(function(t){return t[1];});
+        var kat=ts.find(function(x){return x!==window.NostrLS.oznaka&&x!==section&&x!=='placljivo'&&x!=='brezplacno'&&x.indexOf('format:')!==0;})||section;
+        var placljivo=ts.indexOf('placljivo')>-1, brezpl=ts.indexOf('brezplacno')>-1;
+        var pr=(ev.tags.find(function(t){return t[0]==='price';})||[]); var cenaTxt=pr[1]?(pr[1]+' '+(pr[2]||'EUR')):'';
+        var cena= izo&&brezpl ? '<div class="cena dogovor">Brezplačno</div>' : (cenaTxt?'<div class="cena">'+escH(cenaTxt)+'</div>':'<div class="cena dogovor">Po dogovoru</div>');
+        var format=(ts.find(function(x){return x.indexOf('format:')===0;})||'').replace('format:','');
+        var pill= izo ? '<div class="izo-znacke">'+(format?'<span class="pill format">'+escH(format)+'</span>':'')+(brezpl?'<span class="pill free">Brezplačno</span>':(placljivo?'<span class="pill paid">Plačljivo</span>':''))+'</div>' : '';
+        var lok=escH(g('location')), kontakt=g('contact');
+        var ime=escH(window.NostrLS.npubOf(ev.pubkey).slice(0,10)+'…'), kratica=escH(ev.pubkey.slice(0,2).toUpperCase());
+        var art=document.createElement('template');
+        art.innerHTML=('<article class="oglas" data-kat="'+escH(kat)+'"'+(izo?' data-placilo="'+(placljivo?'placljivo':'brezplacno')+'"':'')+' data-id="'+ev.id+'" data-pubkey="'+ev.pubkey+'"'+(kontakt?' data-kontakt="'+escH(kontakt)+'"':'')+'>'+
+          '<div class="oglas-slika" style="background:#efe7fb"><span class="oglas-kat">'+escH(kat)+'</span>'+(izo?'🎓':'🛒')+'</div>'+
+          '<div class="oglas-telo">'+pill+'<h3>'+escH(g('title')||'(brez naslova)')+'</h3>'+cena+
+            '<p style="font-size:13px;color:var(--ink-soft);margin:0 0 8px">'+escH((g('summary')||ev.content||'')).slice(0,120)+'</p>'+
+            '<div class="prodajalec"><span class="av">'+kratica+'</span><div><div class="ime">'+ime+'</div><div class="loc">📍 '+(lok||'—')+'</div></div></div></div>'+
+          '<div class="oglas-noga"><button class="btn-kontakt" data-akcija="kontakt">✉️ Kontakt</button>'+
+            '<button class="akcija" data-akcija="komentar"><span>💬</span><span class="n">0</span></button>'+
+            '<button class="akcija like" data-akcija="like"><span>🤍</span><span class="n">0</span></button>'+
+            '<button class="akcija zap" data-akcija="zap"><span>⚡</span></button></div></article>').trim();
+        cont.appendChild(art.content.firstChild);
+      });
+    }).catch(function(){});
+  }
+  window.addEventListener('nostr-ready', function(){ naloziPonudbe('trznica'); naloziPonudbe('izobrazevanje'); });
+  if(window.NostrLS){ naloziPonudbe('trznica'); naloziPonudbe('izobrazevanje'); }
+
   var POGLEDI={novice:{feed:'feedNovice',kat:'katNovice',stran:'stranNovice',tarce:'#feedNovice .karta'},trznica:{feed:'feedTrznica',kat:'katTrznica',stran:'stranTrznica',tarce:'#oglasi .oglas'},izobrazevanje:{feed:'feedIzobrazevanje',kat:'katIzobrazevanje',stran:'stranIzobrazevanje',tarce:'#ucnePonudbe .oglas'}};
   var aktivniPogled='novice';
   document.querySelectorAll('.pogled-tab').forEach(function(t){t.addEventListener('click',function(){document.querySelectorAll('.pogled-tab').forEach(function(x){x.classList.remove('aktiven')});t.classList.add('aktiven');aktivniPogled=t.dataset.pogled;Object.keys(POGLEDI).forEach(function(p){var akt=(p===aktivniPogled),c=POGLEDI[p];document.getElementById(c.feed).classList.toggle('skrit',!akt);document.getElementById(c.kat).classList.toggle('skrit',!akt);document.getElementById(c.stran).classList.toggle('skrit',!akt);});document.getElementById('iskalnik').value='';});});
@@ -192,8 +241,35 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
   document.getElementById('krajIzbor').addEventListener('click',function(e){e.stopPropagation();profilMeni.classList.remove('odprt');krajMeni.classList.toggle('odprt');});
   krajMeni.addEventListener('click',function(e){var el=e.target.closest('.meni-el');if(!el)return;if(el.dataset.kraj){document.getElementById('krajIme').textContent=el.dataset.kraj;pokaziToast('Preklop na kraj: '+el.dataset.kraj+' (naloži se konfiguracija — demo)');}else{pokaziToast('Predlog novega kraja (demo)');}zapriMenije();});
   document.getElementById('profilChip').addEventListener('click',function(e){e.stopPropagation();krajMeni.classList.remove('odprt');profilMeni.classList.toggle('odprt');});
-  profilMeni.addEventListener('click',function(e){var el=e.target.closest('.meni-el');if(!el)return;var p=el.dataset.p;if(p==='odjava'){if(window.NostrLS)window.NostrLS.logout();prijavljen=false;document.getElementById('profilChip').style.display='none';document.getElementById('btnPrijava').style.display='flex';pokaziToast('Odjavljen');}else if(p==='npub'){var st=(window.NostrLS&&window.NostrLS.state)||{};if(st.npub&&navigator.clipboard)navigator.clipboard.writeText(st.npub);pokaziToast('npub kopiran'+(st.npub?' ✓':''));}else{pokaziToast('Odpre se: '+el.textContent.trim()+' (demo)');}zapriMenije();});
+  profilMeni.addEventListener('click',function(e){var el=e.target.closest('.meni-el');if(!el)return;var p=el.dataset.p;
+    if(p==='odjava'){if(window.NostrLS)window.NostrLS.logout();prijavljen=false;document.getElementById('profilChip').style.display='none';document.getElementById('btnPrijava').style.display='flex';pokaziToast('Odjavljen');}
+    else if(p==='npub'){var st=(window.NostrLS&&window.NostrLS.state)||{};if(st.npub&&navigator.clipboard)navigator.clipboard.writeText(st.npub);pokaziToast('npub kopiran'+(st.npub?' ✓':''));}
+    else if(p==='profil'||p==='nastavitve'){odpriProfil(false);}
+    else{pokaziToast('Odpre se: '+el.textContent.trim()+' (demo)');}
+    zapriMenije();});
   document.addEventListener('click',zapriMenije);
+
+  // ===== PROFILNI POGLED (prikaz/kopiranje npub in nsec) =====
+  var maskProfil=document.getElementById('maskProfil');
+  function odpriProfil(novKljuc){
+    var NS=window.NostrLS; if(!NS){pokaziToast('Nostr modul se še nalaga…');return;}
+    var st=NS.state||{}, jeLokalni=(st.method==='local');
+    document.getElementById('pNpub').value=st.npub||'';
+    document.getElementById('pNsecWrap').style.display=jeLokalni?'':'none';
+    document.getElementById('pExtWrap').style.display=jeLokalni?'none':'';
+    var nsecEl=document.getElementById('pNsec'); nsecEl.type='password'; nsecEl.value=jeLokalni?(NS.getNsec()||''):'';
+    document.getElementById('pReveal').textContent='Prikaži';
+    document.getElementById('pRelays').innerHTML=(NS.relaysR||[]).map(function(r){return escH(r);}).join('<br>')||'—';
+    if(novKljuc&&jeLokalni){ document.getElementById('profilPod').textContent='Profil ustvarjen! OBVEZNO shrani zasebni ključ (nsec) — brez njega profila ni mogoče obnoviti.'; nsecEl.type='text'; document.getElementById('pReveal').textContent='Skrij'; }
+    else { document.getElementById('profilPod').textContent='Tvoja Nostr identiteta na tej napravi.'; }
+    maskProfil.classList.add('odprt');
+  }
+  document.getElementById('pZapri').addEventListener('click',function(){maskProfil.classList.remove('odprt');});
+  maskProfil.addEventListener('click',function(e){if(e.target===maskProfil)maskProfil.classList.remove('odprt');});
+  document.getElementById('pReveal').addEventListener('click',function(){var el=document.getElementById('pNsec');if(el.type==='password'){el.type='text';this.textContent='Skrij';}else{el.type='password';this.textContent='Prikaži';}});
+  document.getElementById('pCopyNpub').addEventListener('click',function(){var v=document.getElementById('pNpub').value;if(v&&navigator.clipboard)navigator.clipboard.writeText(v);pokaziToast('npub kopiran ✓');});
+  document.getElementById('pCopyNsec').addEventListener('click',function(){var v=window.NostrLS&&window.NostrLS.getNsec();if(v&&navigator.clipboard)navigator.clipboard.writeText(v);pokaziToast(v?'nsec kopiran — shrani na varno ✓':'ni zasebnega ključa');});
+  document.getElementById('pOdjava').addEventListener('click',function(){if(window.NostrLS)window.NostrLS.logout();prijavljen=false;document.getElementById('profilChip').style.display='none';document.getElementById('btnPrijava').style.display='flex';maskProfil.classList.remove('odprt');pokaziToast('Odjavljen');});
 
   // obrazec
   var KATEGORIJE={trznica:['Kmetijski pridelki in hrana','Domači predelani izdelki','Obrt in rokodelstvo','Storitve','Kmetija in živali','Kmečki turizem','Rabljeno / podarim','Delo'],izobrazevanje:['Jeziki','Računalništvo in digitalno','Glasba in umetnost','Kmetijstvo in vrt','Kuhanje in gospodinjstvo','Šport in rekreacija','Za otroke in mladino','Inštrukcije in učna pomoč','Osebna rast in poklic','Finančna pismenost']};
@@ -217,18 +293,22 @@ var prijavljen=false, mask=document.getElementById('mask'), maskForm=document.ge
     var cenaVal=document.getElementById('fCena').value.trim();
     var valSel=document.querySelector('#fCenaWrap select'); var valuta=valSel?valSel.value:'EUR';
     var brezplacno=izo&&placiloIzbran==='brezplacno';
-    var payload={title:naslov,summary:opis,category:kategorija,section:tip,content:opis};
+    var lok=(document.getElementById('fLokacija')||{}).value||'';
+    var kont=(document.getElementById('fKontakt')||{}).value||'';
+    var payload={title:naslov,summary:opis,category:kategorija,section:tip,content:opis,lokacija:lok.trim(),kontakt:kont.trim()};
     if(izo){payload.format=document.getElementById('fFormat').value;payload.placljivo=!brezplacno;}
     if(cenaVal&&!brezplacno)payload.price={amount:cenaVal,currency:valuta};
-    function koncaj(realno){zapriForm();pokaziToast(realno?'Objavljeno kot NIP-99 dogodek na Nostr ✓':'Objavljeno kot NIP-99 (demo)');
-      document.getElementById('fNaslov').value='';document.getElementById('fOpis').value='';document.getElementById('fCena').value='';}
+    function koncaj(realno){zapriForm();pokaziToast(realno?'Objavljeno na Nostr ✓':'Objavljeno (demo)');
+      ['fNaslov','fOpis','fCena','fLokacija','fKontakt'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+      if(realno){ setTimeout(function(){ naloziPonudbe(tip); }, 1500); }   // osveži prikaz po objavi
+    }
     var NS=window.NostrLS;
     if(NS&&NS.state.method){ NS.publishListing(payload).then(function(){koncaj(true);}).catch(function(e){pokaziToast('Napaka pri objavi: '+(e&&e.message||e));}); }
-    else { koncaj(false); }
+    else { pokaziToast('Najprej se poveži z Nostr profilom'); odpriModal(); }
   });
 
   // akcije
-  document.addEventListener('click',function(e){var b=e.target.closest('.akcija, .btn-kontakt');if(!b)return;var a=b.dataset.akcija;if(!prijavljen){odpriModal();pokaziToast('Za interakcijo poveži Nostr profil');return;}if(a==='like'){var n=b.querySelector('.n');if(!n)return;var c=parseInt(n.textContent)||0;if(b.classList.contains('aktivna')){b.classList.remove('aktivna');b.querySelector('span').textContent='🤍';n.textContent=c-1;}else{b.classList.add('aktivna');b.querySelector('span').textContent='❤️';n.textContent=c+1;var cardL=b.closest('[data-id]');if(cardL&&window.NostrLS&&window.NostrLS.state.method){window.NostrLS.react({id:cardL.dataset.id,pubkey:cardL.dataset.pubkey}).then(function(){pokaziToast('Všeček objavljen na Nostr ✓');});}else{pokaziToast('Všeček objavljen (demo)');}}}else if(a==='zap'){b.classList.add('aktivna');pokaziToast('⚡ Zap poslan (demo)');}else if(a==='komentar'){var cardK=b.closest('[data-id]');if(cardK&&window.NostrLS&&window.NostrLS.state.method){var tx=window.prompt('Komentar:');if(tx){window.NostrLS.comment({id:cardK.dataset.id,pubkey:cardK.dataset.pubkey},tx).then(function(){pokaziToast('Komentar objavljen na Nostr ✓');});}}else{pokaziToast('Komentar kot Nostr dogodek (demo)');}}else if(a==='kontakt'){pokaziToast('Stik prek Nostr sporočila (demo)');}});
+  document.addEventListener('click',function(e){var b=e.target.closest('.akcija, .btn-kontakt');if(!b)return;var a=b.dataset.akcija;if(!prijavljen){odpriModal();pokaziToast('Za interakcijo poveži Nostr profil');return;}if(a==='like'){var n=b.querySelector('.n');if(!n)return;var c=parseInt(n.textContent)||0;if(b.classList.contains('aktivna')){b.classList.remove('aktivna');b.querySelector('span').textContent='🤍';n.textContent=c-1;}else{b.classList.add('aktivna');b.querySelector('span').textContent='❤️';n.textContent=c+1;var cardL=b.closest('[data-id]');if(cardL&&window.NostrLS&&window.NostrLS.state.method){window.NostrLS.react({id:cardL.dataset.id,pubkey:cardL.dataset.pubkey}).then(function(){pokaziToast('Všeček objavljen na Nostr ✓');});}else{pokaziToast('Všeček objavljen (demo)');}}}else if(a==='zap'){b.classList.add('aktivna');pokaziToast('⚡ Zap poslan (demo)');}else if(a==='komentar'){var cardK=b.closest('[data-id]');if(cardK&&window.NostrLS&&window.NostrLS.state.method){var tx=window.prompt('Komentar:');if(tx){window.NostrLS.comment({id:cardK.dataset.id,pubkey:cardK.dataset.pubkey},tx).then(function(){pokaziToast('Komentar objavljen na Nostr ✓');});}}else{pokaziToast('Komentar kot Nostr dogodek (demo)');}}else if(a==='kontakt'){var ck=b.closest('[data-id]');var kt=ck&&ck.dataset.kontakt;pokaziToast(kt?('Kontakt: '+kt):'Stik s ponudnikom prek Nostr (demo)');}});
 
   // web of trust: socialni dokaz + ⋯
   var barve=['#c85a34','#2f6db0','#8a5cd6','#e9a23b','#0e9aa7','#6f7a3e'], ini=['MK','AN','JŽ','SP','TL','BK','NR','ČD'];

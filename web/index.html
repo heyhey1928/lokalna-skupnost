@@ -185,9 +185,26 @@
     <div class="polje skrit" id="fPlaciloWrap"><label>Cenovni status</label><div class="radio-vrsta" id="fPlacilo"><div class="radio-cip izbran" data-v="brezplacno">🆓 Brezplačno</div><div class="radio-cip" data-v="placljivo">💶 Plačljivo</div></div></div>
     <div class="form-vrsta" id="fCenaWrap"><div class="polje"><label>Cena (neobvezno)</label><input id="fCena" placeholder="npr. 12"></div><div class="polje"><label>Valuta</label><select><option>EUR</option><option>sats</option></select></div></div>
     <div class="polje" style="margin-top:-6px"><div class="namig">Če cene ne vneseš, se prikaže »po dogovoru«.</div></div>
-    <div class="form-vrsta"><div class="polje"><label>Lokacija</label><input placeholder="npr. Iška vas"></div><div class="polje"><label>Kontakt / povezava</label><input placeholder="telefon, e-pošta ali povezava"></div></div>
+    <div class="form-vrsta"><div class="polje"><label>Lokacija</label><input id="fLokacija" placeholder="npr. Iška vas"></div><div class="polje"><label>Kontakt / povezava</label><input id="fKontakt" placeholder="telefon, e-pošta ali povezava"></div></div>
     <div class="polje"><label>Fotografije</label><div class="nalozi" id="fSlike">📷 Klikni za <b>nalaganje slik</b> (demo)</div><div class="mod-opomba">Slike se naložijo prek našega nalagalnika in gredo skozi samodejno moderacijo pred objavo.</div></div>
     <div class="form-akcije"><button class="btn-ghost" id="formPreklici">Prekliči</button><button class="btn-primary" id="formObjavi">Objavi</button></div>
+  </div>
+</div>
+
+<div class="mask" id="maskProfil">
+  <div class="modal modal-form">
+    <h2 id="profilNaslov" style="text-align:center">👤 Moj profil</h2>
+    <p class="form-pod" id="profilPod" style="text-align:center">Tvoja Nostr identiteta na tej napravi.</p>
+    <div class="polje"><label>Javni ključ (npub) — deli ga svobodno</label>
+      <div class="form-vrsta" style="gap:8px"><input id="pNpub" readonly><button class="btn-ghost" id="pCopyNpub" style="flex:0 0 auto;padding:0 14px">Kopiraj</button></div>
+    </div>
+    <div class="polje" id="pNsecWrap"><label>Zasebni ključ (nsec) — SKRIVNOST, shrani na varno</label>
+      <div class="form-vrsta" style="gap:8px"><input id="pNsec" type="password" readonly value="nsec…"><button class="btn-ghost" id="pReveal" style="flex:0 0 auto;padding:0 12px">Prikaži</button><button class="btn-ghost" id="pCopyNsec" style="flex:0 0 auto;padding:0 12px">Kopiraj</button></div>
+      <div class="mod-opomba">Zasebni ključ je kot geslo in ga <b>ni mogoče obnoviti</b>. Shrani ga v upravitelj gesel. Kdor ima ta ključ, lahko objavlja v tvojem imenu — nikoli ga ne deli.</div>
+    </div>
+    <div class="polje" id="pExtWrap" style="display:none"><div class="mod-opomba">Prijavljen prek brskalniške razširitve (NIP-07). Zasebni ključ hrani razširitev (npr. Alby), ne portal.</div></div>
+    <div class="polje"><label>Relayji</label><div id="pRelays" style="font-size:12px;color:var(--ink-soft);line-height:1.7"></div></div>
+    <div class="form-akcije"><button class="btn-ghost" id="pOdjava" style="color:#dc2626">Odjava</button><button class="btn-primary" id="pZapri">Zapri</button></div>
   </div>
 </div>
 

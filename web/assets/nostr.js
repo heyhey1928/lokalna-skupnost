@@ -48,15 +48,27 @@ const NostrLS = {
   createAccount() {
     const sk = generateSecretKey();
     state.sk = sk; state.pubkey = getPublicKey(sk); state.method = "local";
+    try { localStorage.setItem("ls_nsec", nip19.nsecEncode(sk)); } catch (e) {}
     return { ...this.state, nsec: nip19.nsecEncode(sk) };
   },
   loginNsec(nsec) {
     const dec = nip19.decode(nsec);
     if (dec.type !== "nsec") throw new Error("Neveljaven nsec");
     state.sk = dec.data; state.pubkey = getPublicKey(dec.data); state.method = "local";
+    try { localStorage.setItem("ls_nsec", nsec); } catch (e) {}
     return this.state;
   },
-  logout() { state.pubkey = null; state.sk = null; state.method = null; },
+  // Obnovi prijavo iz prejšnjega obiska (localStorage) — obstojen profil na tej napravi
+  restore() {
+    try {
+      const nsec = localStorage.getItem("ls_nsec");
+      if (nsec) { const dec = nip19.decode(nsec); if (dec.type === "nsec") { state.sk = dec.data; state.pubkey = getPublicKey(dec.data); state.method = "local"; return this.state; } }
+    } catch (e) {}
+    return null;
+  },
+  logout() { state.pubkey = null; state.sk = null; state.method = null; try { localStorage.removeItem("ls_nsec"); } catch (e) {} },
+  // Zasebni ključ (samo za lokalni profil; pri NIP-07 ga hrani razširitev)
+  getNsec() { try { return state.sk ? nip19.nsecEncode(state.sk) : null; } catch (e) { return null; } },
 
   // NIP-25 reakcija (kind 7)
   async react(target, content = "+") {
@@ -88,7 +100,7 @@ const NostrLS = {
     } catch { return []; }
   },
   // NIP-99 oglas / učna ponudba (kind 30402)
-  async publishListing({ d, title, summary, price, category, section, format, placljivo, place = OZNAKA, content = "" }) {
+  async publishListing({ d, title, summary, price, category, section, format, placljivo, lokacija, kontakt, place = OZNAKA, content = "" }) {
     const tags = [["d", d || String(now())], ["title", title], ["t", place]];
     if (section)  tags.push(["t", section]);
     if (category) tags.push(["t", category]);
@@ -96,6 +108,8 @@ const NostrLS = {
     if (typeof placljivo === "boolean") tags.push(["t", placljivo ? "placljivo" : "brezplacno"]);
     if (summary)  tags.push(["summary", summary]);
     if (price && price.amount) tags.push(["price", String(price.amount), price.currency || "EUR"]);
+    if (lokacija) tags.push(["location", lokacija]);
+    if (kontakt)  tags.push(["contact", kontakt]);
     return publish(await sign({ kind: 30402, created_at: now(), tags, content }));
   },
   // Branje novic kraja (NIP-23, kind 30023) po oznaki
@@ -106,6 +120,11 @@ const NostrLS = {
   // Branje koledarskih dogodkov (NIP-52, kind 31922/31923) po oznaki
   async fetchEvents(limit = 100) {
     try { return await pool.querySync(RELAYS_R, { kinds: [31922, 31923], "#t": [OZNAKA], limit }); }
+    catch { return []; }
+  },
+  // Branje oglasov / učnih ponudb (NIP-99, kind 30402) po oznaki
+  async fetchListings(limit = 100) {
+    try { return await pool.querySync(RELAYS_R, { kinds: [30402], "#t": [OZNAKA], limit }); }
     catch { return []; }
   },
   npubOf
